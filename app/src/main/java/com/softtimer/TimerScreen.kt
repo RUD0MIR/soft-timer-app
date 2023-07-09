@@ -65,14 +65,6 @@ import kotlin.math.sin
 
 @Composable
 fun TimerScreen() {
-
-    val surfaceColors = listOf(
-        Color(0xFFEAE7E7),
-        Color(0xFFEAE7E7),
-        Color(0xFFE6E3E3),
-        Color(0xFFDAD9D9),
-        Color(0xFFC6C6C6)
-    )
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -86,231 +78,10 @@ fun TimerScreen() {
             ),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        ClockSection()
+        Clock()
 
         ActionsSection()
     }
-}
-
-@Composable
-fun ClockSection(modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .fillMaxHeight(0.5f),
-        contentAlignment = Alignment.Center
-    ) {
-        //bottom circle
-        Canvas(
-            modifier = Modifier.size(size = 210.dp),
-            onDraw = {
-                drawCircle(
-                    Brush.radialGradient(
-                        center = Offset.offsetFromCenter(x = 50f, y = 60f, center = center),
-                        colorStops = arrayOf(
-                            Pair(0.8f, Color(0xFFE2E0E0)),
-                            Pair(0.9f, Color(0xFFD9D7D7)),
-                            Pair(1f, Color(0xFFC9C8C8))
-                        ),
-                        radius = 350f
-                    )
-                )
-            }
-        )
-
-        //shadow
-        Canvas(
-            modifier = Modifier.size(180.dp),
-            onDraw = {
-                val offset = Offset(x = 265f, y = 280f)
-                drawCircle(
-                    center = offset,
-                    brush = Brush.radialGradient(
-                        center = offset,
-                        colorStops = arrayOf(
-                            Pair(0.8f, Color(0xFFABABAC)),
-                            Pair(1f, Color.Transparent)
-                        ),
-                    )
-                )
-            }
-        )
-
-        //ambient light effect around divided circle
-        Canvas(
-            modifier = Modifier.size(173.dp),
-            onDraw = {
-                drawCircle(
-                    Brush.verticalGradient(
-                        colorStops = arrayOf(
-                            Pair(0.5f, Light),
-                            Pair(1f, Color(0xFF878787))
-                        )
-                    )
-                )
-            }
-        )
-
-        //divided circle
-        Canvas(
-            modifier = Modifier.size(170.dp),
-            onDraw = {
-                drawCircle(
-                    Brush.linearGradient(
-                        colorStops = arrayOf(
-                            Pair(0.4f, Color(0xFFE0DEDE)),
-                            Pair(1f, Color(0xFFCFCFCF))
-                        )
-                    )
-                )
-            }
-        )
-
-        TimerDividers(circleRadius = 230f)
-
-        //shadow
-        Canvas(
-            modifier = Modifier.size(110.dp),
-            onDraw = {
-                val offset = Offset(x = 190f, y = 200f)
-                drawCircle(
-                    center = offset,
-                    brush = Brush.radialGradient(
-                        center = offset,
-                        colorStops = arrayOf(
-                            Pair(0.3f, Color(0xFFABABAC)),
-                            Pair(1f, Color.Transparent)
-                        )
-                    )
-                )
-            }
-        )
-
-        //indicator
-        Canvas(
-            modifier = Modifier
-                .shadow(elevation = 5.dp)
-                .size(width = 4.dp, height = 58.dp),
-            onDraw = {
-                //shadow
-//                drawRect(
-//                    brush = Brush.horizontalGradient(
-//                        colorStops = arrayOf(
-//                            Pair(0.9f, Color(0xFFA09E9E)),
-//                            Pair(1f, Color.Green),
-//                        ),
-//                        startX = 1f,
-//                        endX = 1f
-//                    ),
-//                    size = Size(width = 5.dp.toPx(), height = 58.dp.toPx()),
-//                    topLeft = Offset.offsetFromCenter(x = 1f, y = -280f, center = center)
-//                )
-
-                //indicator
-                drawRect(
-                    brush = Brush.verticalGradient(
-                        colorStops = arrayOf(
-                            Pair(1f, Color(0xFF305FD6)),
-                            Pair(0.3f, Color(0xFF6E8EDF))
-                        )
-                    ),
-                    size = Size(width = 4.dp.toPx(), height = 58.dp.toPx()),
-                    topLeft = Offset.offsetFromCenter(x = -4f, y = -289f, center = center)
-                )
-            }
-        )
-
-        Indicator(modifier = Modifier.offset(y = (-76).dp))
-
-        //circle with timer
-        Canvas(
-            modifier = Modifier.size(95.dp),
-            onDraw = {
-                drawCircle(color = White1)
-            }
-        )
-
-        TimerNumbers()
-    }
-}
-
-@Composable
-fun TimerNumbers() {
-    Text(
-        text = "15:30",
-        fontFamily = Orbitron,
-        color = Black,
-        fontSize = 20.sp
-    )
-}
-
-@Composable
-fun TimerDividers(circleRadius: Float) {
-    var circleCenter by remember {
-        mutableStateOf(Offset.Zero)
-    }
-
-    Canvas(modifier = Modifier.fillMaxSize()) {
-        circleCenter = Offset(x = size.width/2f, y = size.height/2f)
-        val lineLength = 16f
-        val dividersCount = 80
-
-        for(i in 0 until dividersCount){
-            val angleInDegrees = i*360f/dividersCount
-            val angleInRad = angleInDegrees * PI / 180f + PI /2f
-            val lineThickness = 1.3f
-
-            val start = Offset(
-                x = (circleRadius * cos(angleInRad) + circleCenter.x).toFloat(),
-                y = (circleRadius * sin(angleInRad) + circleCenter.y).toFloat()
-            )
-
-            val end = Offset(
-                x = (circleRadius * cos(angleInRad) + circleCenter.x).toFloat(),
-                y = (circleRadius * sin(angleInRad) + lineLength + circleCenter.y).toFloat()
-            )
-            rotate(
-                angleInDegrees+180,
-                pivot = start
-            ){
-                drawLine(
-                    color = Color(0xFFB8B8B8),
-                    start = start,
-                    end = end,
-                    strokeWidth = lineThickness.dp.toPx()
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun Indicator(modifier: Modifier = Modifier) {
-        Box(modifier = modifier
-            .shadow(
-                modifier = Modifier
-                    .rotate(4f),
-                blurRadius = 4.dp,
-                offsetX = 10.dp,
-                offsetY = 6.dp,
-                color = Color(0xFFA1A0A0)
-            )
-            .size(width = 4.dp, height = 58.dp)
-        )
-
-
-        Box(modifier = modifier
-            .background(
-                brush = Brush.verticalGradient(
-                    colors = listOf(
-                        Color(0xFF305FD6),
-                        Color(0xFF6E8EDF)
-                    ),
-                    startY = 90f
-                )
-            )
-            .size(width = 4.dp, height = 58.dp)
-        )
 }
 
 @Composable
@@ -332,29 +103,30 @@ fun ActionsSection() {
 
 @Composable
 fun CustomButton(size: Dp, icon: ImageVector, contentDescription: String) {
-    Box(modifier = Modifier
-        .shadow(
-            shape = CircleShape,
-            color = Shadow,
-            borderRadius = size,
-            blurRadius = 13.dp,
-            offsetX = 6.dp,
-            offsetY = 5.dp
-        )
-        .shadow(
-            shape = CircleShape,
-            color = Light,
-            borderRadius = size,
-            blurRadius = 10.dp,
-            offsetX = (-6).dp,
-            offsetY = (-5).dp
-        )
-        .size(size)
-        .clip(CircleShape)
-        .background(ButtonGray)
-        .clickable {
+    Box(
+        modifier = Modifier
+            .shadow(
+                shape = CircleShape,
+                color = Shadow,
+                radius = size,
+                blurRadius = 13.dp,
+                offsetX = 6.dp,
+                offsetY = 5.dp
+            )
+            .shadow(
+                shape = CircleShape,
+                color = Light,
+                radius = size,
+                blurRadius = 10.dp,
+                offsetX = (-6).dp,
+                offsetY = (-5).dp
+            )
+            .size(size)
+            .clip(CircleShape)
+            .background(ButtonGray)
+            .clickable {
 
-        },
+            },
         contentAlignment = Alignment.Center
     ) {
         Icon(
@@ -372,11 +144,5 @@ fun CustomButton(size: Dp, icon: ImageVector, contentDescription: String) {
 fun TimerScreenPreview() {
     SoftTImerTheme {
         TimerScreen()
-//        Box(
-//            modifier = Modifier.fillMaxSize(),
-//            contentAlignment = Alignment.Center
-//        ) {
-//            ActionsSection()
-//        }
     }
 }

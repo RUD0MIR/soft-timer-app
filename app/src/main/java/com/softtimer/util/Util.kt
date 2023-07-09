@@ -21,7 +21,7 @@ fun Offset.Companion.offsetFromCenter(x: Float = 0f, y: Float = 0f, center: Offs
 fun Modifier.shadow(
     shape: Shape = RectangleShape,
     color: Color = Color.Black,
-    borderRadius: Dp = 0.dp,
+    radius: Dp = 0.dp,
     blurRadius: Dp = 0.dp,
     offsetY: Dp = 0.dp,
     offsetX: Dp = 0.dp,
@@ -52,8 +52,8 @@ fun Modifier.shadow(
                         top = topPixel,
                         right = rightPixel,
                         bottom = bottomPixel,
-                        radiusX = borderRadius.toPx(),
-                        radiusY = borderRadius.toPx(),
+                        radiusX = radius.toPx(),
+                        radiusY = radius.toPx(),
                         paint
                     )
                 }
@@ -64,7 +64,7 @@ fun Modifier.shadow(
                             y = offsetY.toPx(),
                             center = center
                         ),
-                        radius = borderRadius.toPx() / 2,
+                        radius = radius.toPx() / 2,
                         paint
                     )
                 }

@@ -6,6 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -19,6 +20,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonColors
@@ -45,6 +48,7 @@ import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
@@ -57,8 +61,8 @@ import com.softtimer.ui.theme.Orbitron
 import com.softtimer.ui.theme.Shadow
 import com.softtimer.ui.theme.SoftTImerTheme
 import com.softtimer.ui.theme.White1
+import com.softtimer.util.circleShadow
 import com.softtimer.util.offsetFromCenter
-import com.softtimer.util.shadow
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
@@ -92,29 +96,43 @@ fun ActionsSection() {
         horizontalArrangement = Arrangement.SpaceAround
     ) {
         //restart button
-        CustomButton(size = 32.dp, icon = Icons.Default.Refresh, "restart")
+        CustomButton(
+            size = 32.dp,
+            iconSize = 13.dp,
+            icon = ImageVector.vectorResource(id = R.drawable.ic_restart),
+            contentDescription = "restart"
+        )
 
         //start/stop button
-        CustomButton(size = 60.dp, icon = Icons.Default.PlayArrow, "play")
+        CustomButton(
+            size = 60.dp,
+            iconSize = 24.dp,
+            icon = ImageVector.vectorResource(id = R.drawable.ic_start),
+            contentDescription = "play"
+        )
 
-        Spacer(modifier = Modifier.width(32.dp))
+        //theme button
+        CustomButton(
+            size = 32.dp,
+            iconSize = 13.dp,
+            icon = ImageVector.vectorResource(id = R.drawable.ic_sun),
+            contentDescription = "change theme"
+        )
     }
 }
 
 @Composable
-fun CustomButton(size: Dp, icon: ImageVector, contentDescription: String) {
+fun CustomButton(size: Dp, icon: ImageVector, iconSize: Dp, contentDescription: String) {
     Box(
         modifier = Modifier
-            .shadow(
-                shape = CircleShape,
+            .circleShadow(
                 color = Shadow,
                 radius = size,
                 blurRadius = 13.dp,
                 offsetX = 6.dp,
                 offsetY = 5.dp
             )
-            .shadow(
-                shape = CircleShape,
+            .circleShadow(
                 color = Light,
                 radius = size,
                 blurRadius = 10.dp,
@@ -130,7 +148,7 @@ fun CustomButton(size: Dp, icon: ImageVector, contentDescription: String) {
         contentAlignment = Alignment.Center
     ) {
         Icon(
-            modifier = Modifier.size(size / 2),
+            modifier = Modifier.size(iconSize),
             tint = Black,
             imageVector = icon,
             contentDescription = contentDescription

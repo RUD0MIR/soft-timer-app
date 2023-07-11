@@ -5,6 +5,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -14,6 +16,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -35,10 +38,22 @@ class MainActivity : ComponentActivity() {
         setContent {
             SoftTImerTheme {
                 // A surface container using the 'background' color from the theme
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
+                Box(
+                    modifier = Modifier.fillMaxSize().background(Color(0xFFDAD8D8)),
+                    contentAlignment = Alignment.Center
                 ) {
+                    val clockNumbers = mutableListOf("00")
+                    (1..60).map { it.toString() }.forEach {
+                        if (it.length == 1) {
+                            clockNumbers.add("0$it")
+                        } else {
+                            clockNumbers.add(it)
+                        }
+                    }
+                    val values = remember { clockNumbers }
+                    val valuesState = rememberPickerState()
+
+                    StyledNumberPicker(values = values, valuesState = valuesState)
                 }
             }
         }

@@ -1,70 +1,72 @@
 package com.softtimer
 
+import android.Manifest
+import android.content.ComponentName
+import android.content.Context
+import android.content.Intent
+import android.content.ServiceConnection
 import android.os.Bundle
+import android.os.IBinder
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.rotate
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.vectorResource
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
-import androidx.core.graphics.createBitmap
+import com.softtimer.service.TimerService
+import com.softtimer.ui.TimerScreen
 import com.softtimer.ui.theme.SoftTImerTheme
-import kotlin.math.PI
-import kotlin.math.cos
-import kotlin.math.sin
+
 
 class MainActivity : ComponentActivity() {
+    private var isBound by mutableStateOf(false)
+    private lateinit var timerService: TimerService
+    private val connection = object : ServiceConnection {
+        override fun onServiceConnected(className: ComponentName, service: IBinder) {
+            val binder = service as TimerService.StopwatchBinder
+            timerService = binder.getService()
+            isBound = true
+        }
+
+        override fun onServiceDisconnected(arg0: ComponentName) {
+            isBound = false
+        }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        Intent(this, TimerService::class.java).also { intent ->
+            bindService(intent, connection, Context.BIND_AUTO_CREATE)
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             SoftTImerTheme {
-                // A surface container using the 'background' color from the theme
-                Box(
-                    modifier = Modifier.fillMaxSize().background(Color(0xFFDAD8D8)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    val clockNumbers = mutableListOf("00")
-                    (1..60).map { it.toString() }.forEach {
-                        if (it.length == 1) {
-                            clockNumbers.add("0$it")
-                        } else {
-                            clockNumbers.add(it)
-                        }
-                    }
-                    val values = remember { clockNumbers }
-                    val valuesState = rememberPickerState()
-
-                    StyledNumberPicker(values = values, valuesState = valuesState)
+                if (isBound) {
+                    TimerScreen(timerService = timerService)
                 }
             }
         }
+        requestPermissions(Manifest.permission.POST_NOTIFICATIONS)
     }
-}
 
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    SoftTImerTheme {
-        
+    private fun requestPermissions(vararg permissions: String) {
+        val requestPermissionLauncher = registerForActivityResult(
+            ActivityResultContracts.RequestMultiplePermissions()
+        ) { result ->
+            result.entries.forEach {
+                Log.d("MainActivity", "${it.key} = ${it.value}")
+            }
+        }
+        requestPermissionLauncher.launch(permissions.asList().toTypedArray())
+    }
 
+    override fun onStop() {
+        super.onStop()
+        unbindService(connection)
+        isBound = false
     }
 }

@@ -2,6 +2,7 @@ package com.softtimer.util
 
 import android.graphics.BlurMaskFilter
 import android.graphics.drawable.shapes.ArcShape
+import android.util.Log
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
@@ -14,7 +15,31 @@ import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 fun Offset.Companion.offsetFromCenter(x: Float = 0f, y: Float = 0f, center: Offset): Offset {
     return Offset(center.x + x, center.y + y)
+}
+
+fun formatTime(seconds: String, minutes: String, hours: String): String {
+    return "$hours:$minutes:$seconds"
+}
+
+fun Int.pad(length: Int = 2, padChar: Char = '0'): String {
+    return this.toString().padStart(length, padChar)
+}
+
+fun getNumbersWithPad(range: IntRange): List<String> {
+    val timeNumbers = mutableListOf("00")
+    range.map { it }.forEach {
+        timeNumbers.add(it.pad())
+    }
+    return timeNumbers
+}
+
+fun getDurationInSec(h: Int, min: Int, s: Int): Duration {
+    val hInSec = h * 60 * 60
+    val minInSec = min * 60
+    return (hInSec + minInSec + s).seconds
 }

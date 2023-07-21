@@ -1,5 +1,8 @@
 package com.softtimer.ui
 
+import android.os.Build
+import android.widget.NumberPicker
+import androidx.annotation.RequiresApi
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.tween
@@ -9,29 +12,30 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
 import com.softtimer.service.TimerService
 import com.softtimer.service.TimerState
 import com.softtimer.ui.theme.Black
@@ -43,22 +47,22 @@ import com.softtimer.ui.theme.MidAnimationDuration
 import com.softtimer.ui.theme.Orbitron
 import com.softtimer.ui.theme.SoftTImerTheme
 import com.softtimer.util.getNumbersWithPad
-import kotlinx.coroutines.launch
 
-private var visibility by mutableStateOf(1f)
+private var pickerVisibility by mutableStateOf(1f)
 private var isVisible by mutableStateOf(true)
 
+
+@RequiresApi(Build.VERSION_CODES.Q)
 @Composable
 fun PickerSection(timerService: TimerService) {
     val timerState = timerService.timerState
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(key1 = timerState) {
-        when(timerState) {
+        when (timerState) {
             TimerState.Started -> {
-                //Log.d("TAG", "isVisible: $isVisible")
                 animate(
-                    initialValue = visibility,
+                    initialValue = pickerVisibility,
                     targetValue = 0f,
                     animationSpec = tween(
                         durationMillis = MidAnimationDuration,
@@ -66,16 +70,17 @@ fun PickerSection(timerService: TimerService) {
                     )
                 )
                 { value, _ ->
-                    visibility = value
-                    if(visibility < 0.1f) {
+                    pickerVisibility = value
+                    if (pickerVisibility < 0.1f) {
                         isVisible = false
                     }
                 }
             }
+
             TimerState.Reset -> {
                 isVisible = true
                 animate(
-                    initialValue = visibility,
+                    initialValue = pickerVisibility,
                     targetValue = 1f,
                     animationSpec = tween(
                         durationMillis = MidAnimationDuration,
@@ -83,9 +88,10 @@ fun PickerSection(timerService: TimerService) {
                     )
                 )
                 { value, _ ->
-                    visibility = value
+                    pickerVisibility = value
                 }
             }
+
             else -> {}
         }
     }
@@ -107,29 +113,43 @@ fun PickerSection(timerService: TimerService) {
                     value = timerService.hState,
                     values = getNumbersWithPad(1..23),
                     name = "h"
-                ) { selectedItem, listState->
+                ) { selectedItem ->
                     timerService.hState = selectedItem
-
                 }
+
+                Text(
+                    modifier = Modifier
+                        .padding(start = 8.dp, end = 8.dp, bottom = 34.dp),
+                    text = ":",
+                    fontFamily = Orbitron,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    textAlign = TextAlign.Center
+                )
 
                 StyledNumberPicker(
                     value = timerService.minState,
                     values = getNumbersWithPad(1..59),
                     name = "min"
-                ) { selectedItem, listState ->
+                ) { selectedItem ->
                     timerService.minState = selectedItem
-                    if(timerService.timerState == TimerState.Reset) {
-                        scope.launch {
-                            listState.scrollToItem(selectedItem)
-                        }
-                    }
                 }
+
+                Text(
+                    modifier = Modifier
+                        .padding(start = 8.dp, end = 8.dp, bottom = 34.dp),
+                    text = ":",
+                    fontFamily = Orbitron,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    textAlign = TextAlign.Center
+                )
 
                 StyledNumberPicker(
                     value = timerService.sState,
                     values = getNumbersWithPad(1..59),
                     name = "s"
-                ) { selectedItem, listState ->
+                ) { selectedItem ->
                     timerService.sState = selectedItem
                 }
             }
@@ -137,47 +157,54 @@ fun PickerSection(timerService: TimerService) {
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.Q)
 @Composable
 fun StyledNumberPicker(
     value: Int,
     values: List<String>,
     name: String,
-    onValueChanged: (Int, LazyListState) -> Unit
+    onValueChanged: (Int) -> Unit
 ) {
     Box(
-        modifier = Modifier.size(width = 60.dp, height = 155.dp),
+        modifier = Modifier.size(width = 50.dp, height = 140.dp),
     ) {
         Text(
             modifier = Modifier.align(Alignment.BottomCenter),
             text = name,
             fontFamily = Orbitron,
             fontSize = 16.sp,
-            color = Black.copy(visibility),
-            fontWeight = FontWeight.Medium
+            color = Black.copy(pickerVisibility),
+            fontWeight = FontWeight.SemiBold
         )
 
         //NumberPicker
         Box(
             modifier = Modifier
-                .size(width = 50.dp, height = 115.dp),
+                .align(Alignment.TopCenter)
+                .fillMaxWidth()
+                .fillMaxHeight(0.80f),
         ) {
-            Picker(
-                modifier = Modifier
-                    .size(width = 50.dp, height = 115.dp)
-                    .align(Alignment.Center),
-                value = value,
-                items = values,
-                visibleItemsCount = 3,
-                textModifier = Modifier.padding(vertical = 8.dp),
-                textStyle = TextStyle(
-                    fontSize = 20.sp,
-                    fontFamily = Orbitron,
-                    color = Black.copy(visibility)
-                )
-            ) { selectedItem, listState ->
-                onValueChanged(selectedItem, listState)
-            }
+            AndroidView(
+                modifier = Modifier.fillMaxWidth(),
+                factory = { context ->
+                    NumberPicker(context).apply {
+                        minValue = 0
+                        maxValue = values.size - 1
+                        displayedValues = values.toTypedArray()
+                        textColor = Black.copy(pickerVisibility).hashCode()
+                        textSize = 60f
+                        setOnValueChangedListener { numberPicker, i, i2 ->
+                            onValueChanged(numberPicker.value)
+                        }
+                    }
+                },
+                update = { picker ->
+                    picker.apply {
+                        textColor = Black.copy(pickerVisibility).hashCode()
+                    }
 
+                }
+            )
 
             //shadow effect
             Canvas(
@@ -190,13 +217,13 @@ fun StyledNumberPicker(
                         colors = listOf(
                             Color.Transparent,
                             FaintShadow.copy(
-                                if (visibility - FaintShadow.alpha >= 0)
-                                    visibility - FaintShadow.alpha
+                                if (pickerVisibility - FaintShadow.alpha >= 0)
+                                    pickerVisibility - FaintShadow.alpha
                                 else 0f
                             ),
                             FaintShadow1.copy(
-                                if (visibility - FaintShadow1.alpha >= 0)
-                                    visibility - FaintShadow1.alpha
+                                if (pickerVisibility - FaintShadow1.alpha >= 0)
+                                    pickerVisibility - FaintShadow1.alpha
                                 else 0f
                             ),
                             Color.Transparent
@@ -216,13 +243,13 @@ fun StyledNumberPicker(
                         colors = listOf(
                             Color.Transparent,
                             FaintLight1.copy(
-                                if (visibility - FaintLight1.alpha >= 0)
-                                    visibility - FaintLight1.alpha
+                                if (pickerVisibility - FaintLight1.alpha >= 0)
+                                    pickerVisibility - FaintLight1.alpha
                                 else 0f
                             ),
                             FaintLight.copy(
-                                if (visibility - FaintLight.alpha >= 0)
-                                    visibility - FaintLight.alpha
+                                if (pickerVisibility - FaintLight.alpha >= 0)
+                                    pickerVisibility - FaintLight.alpha
                                 else 0f
                             ),
                             Color.Transparent
@@ -238,13 +265,15 @@ fun StyledNumberPicker(
 @Composable
 fun TestPreview() {
     SoftTImerTheme {
-        Surface(
+        var value by remember { mutableStateOf("00") }
+
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xFFDAD8D8))
+                .background(Color(0xFFDAD8D8)),
+            contentAlignment = Alignment.Center
         ) {
-            //PickerSection()
-        }
 
+        }
     }
 }

@@ -1,22 +1,40 @@
 package com.softtimer
 
 import android.Manifest
+import android.R
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
+import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
 import android.util.Log
+import android.widget.LinearLayout
+import android.widget.NumberPicker
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.RequiresApi
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.Text
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
 import com.softtimer.service.TimerService
 import com.softtimer.ui.TimerScreen
 import com.softtimer.ui.theme.SoftTImerTheme
+import com.softtimer.util.getNumbersWithPad
+import com.softtimer.util.pad
+import kotlinx.coroutines.cancel
 
 
 class MainActivity : ComponentActivity() {
@@ -41,12 +59,17 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.Q)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             SoftTImerTheme {
                 if (isBound) {
                     TimerScreen(timerService = timerService)
+
+//                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+//
+//                    }
                 }
             }
         }
@@ -68,5 +91,6 @@ class MainActivity : ComponentActivity() {
         super.onStop()
         unbindService(connection)
         isBound = false
+        timerService.serviceScope.cancel()
     }
 }

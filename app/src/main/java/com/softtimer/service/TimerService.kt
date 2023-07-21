@@ -23,8 +23,9 @@ import com.softtimer.util.formatTime
 import com.softtimer.util.getDurationInSec
 import com.softtimer.util.pad
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -48,6 +49,8 @@ class TimerService : Service() {
     private val binder = StopwatchBinder()
 
     private lateinit var timer: Timer
+
+    val serviceScope = CoroutineScope(Dispatchers.Default)
 
     var timerState by mutableStateOf(TimerState.Idle)
         private set
@@ -91,7 +94,7 @@ class TimerService : Service() {
 
             TimerState.Reset.name -> {
                 stopTimer()
-                cancelTimer()
+                resetTimer()
                 stopForegroundService()
             }
         }
@@ -112,7 +115,7 @@ class TimerService : Service() {
 
                 ACTION_SERVICE_RESET -> {
                     stopTimer()
-                    cancelTimer()
+                    resetTimer()
                     stopForegroundService()
                 }
             }
@@ -129,20 +132,23 @@ class TimerService : Service() {
 
         val isTimeSet = duration != ZERO
 
-        if (isTimeSet) {
-            this@TimerService.timerState = TimerState.Started
-            Log.d(TAG, "before")
-            runBlocking {
-                launch {
-                    delay(MidAnimationDelay)
-                    Log.d(TAG, "after")
-                    this@TimerService.timerState = TimerState.Running
-                    timer = fixedRateTimer(initialDelay = 1000L, period = 1000L) {
-                        duration = duration.minus(1.seconds)
-                        updateTimeUnits()
 
-                        onTick(getH(), getMin(), getS())
-                    }
+        Log.d(TAG, "isTimer set: $isTimeSet")
+        if (isTimeSet) {
+            serviceScope.launch {
+                Log.d(TAG, "idle?: ${timerState == TimerState.Idle}")
+                if (timerState == TimerState.Idle) {
+                    timerState = TimerState.Started
+                    Log.d(TAG, "started!")
+                    delay(MidAnimationDelay)
+                }
+                this@TimerService.timerState = TimerState.Running
+                Log.d(TAG, "running!")
+                timer = fixedRateTimer(initialDelay = 1000L, period = 1000L) {
+                    duration = duration.minus(1.seconds)
+                    updateTimeUnits()
+
+                    onTick(getH(), getMin(), getS())
                 }
             }
 
@@ -160,10 +166,20 @@ class TimerService : Service() {
         this.timerState = TimerState.Paused
     }
 
-    private fun cancelTimer() {
-        duration = Duration.ZERO
-        this.timerState = TimerState.Idle
-        updateTimeUnits()
+    private fun resetTimer() {
+        serviceScope.launch {
+            this@TimerService.timerState = TimerState.Reset
+
+            delay(MidAnimationDelay)
+
+            this@TimerService.timerState = TimerState.Idle
+
+            duration = Duration.ZERO
+            updateTimeUnits()
+
+            //serviceScope.cancel()
+        }
+
     }
 
     private fun updateTimeUnits() {

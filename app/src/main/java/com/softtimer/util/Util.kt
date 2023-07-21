@@ -4,6 +4,7 @@ import android.graphics.BlurMaskFilter
 import android.graphics.drawable.shapes.ArcShape
 import android.util.Log
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
@@ -13,6 +14,7 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlin.time.Duration
@@ -43,3 +45,6 @@ fun getDurationInSec(h: Int, min: Int, s: Int): Duration {
     val minInSec = min * 60
     return (hInSec + minInSec + s).seconds
 }
+
+@Composable
+fun pixelsToDp(pixels: Int) = with(LocalDensity.current) { pixels.toDp() }

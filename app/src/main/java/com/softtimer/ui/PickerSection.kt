@@ -7,6 +7,7 @@ import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,8 +17,10 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -28,14 +31,18 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import com.softtimer.R
 import com.softtimer.service.TimerService
 import com.softtimer.service.TimerState
 import com.softtimer.ui.theme.Black
@@ -51,8 +58,6 @@ import com.softtimer.util.getNumbersWithPad
 private var pickerVisibility by mutableStateOf(1f)
 private var isVisible by mutableStateOf(true)
 
-
-@RequiresApi(Build.VERSION_CODES.Q)
 @Composable
 fun PickerSection(timerService: TimerService) {
     val timerState = timerService.timerState
@@ -97,12 +102,11 @@ fun PickerSection(timerService: TimerService) {
     }
 
     if (isVisible) {
-        Column(
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally,
+        Box(
+            contentAlignment = Alignment.Center,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(155.dp)
+                .height(164.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -110,42 +114,26 @@ fun PickerSection(timerService: TimerService) {
                 horizontalArrangement = Arrangement.Center
             ) {
                 StyledNumberPicker(
+                    modifier = Modifier.offset(x = 14.dp),
                     value = timerService.hState,
                     values = getNumbersWithPad(1..23),
+                    showDivider = true,
                     name = "h"
                 ) { selectedItem ->
                     timerService.hState = selectedItem
                 }
 
-                Text(
-                    modifier = Modifier
-                        .padding(start = 8.dp, end = 8.dp, bottom = 34.dp),
-                    text = ":",
-                    fontFamily = Orbitron,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    textAlign = TextAlign.Center
-                )
-
                 StyledNumberPicker(
                     value = timerService.minState,
                     values = getNumbersWithPad(1..59),
-                    name = "min"
+                    name = "min",
+                    showDivider = true,
                 ) { selectedItem ->
                     timerService.minState = selectedItem
                 }
 
-                Text(
-                    modifier = Modifier
-                        .padding(start = 8.dp, end = 8.dp, bottom = 34.dp),
-                    text = ":",
-                    fontFamily = Orbitron,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    textAlign = TextAlign.Center
-                )
-
                 StyledNumberPicker(
+                modifier = Modifier.offset(x = (-14).dp),
                     value = timerService.sState,
                     values = getNumbersWithPad(1..59),
                     name = "s"
@@ -153,35 +141,76 @@ fun PickerSection(timerService: TimerService) {
                     timerService.sState = selectedItem
                 }
             }
+
+            //a crutch that overlaps numbers that go beyond the picker's top boundaries
+            Box(modifier = Modifier
+                .fillMaxWidth(0.6f)
+                .align(Alignment.TopCenter)
+                .height(13.dp)
+                .background(Brush.horizontalGradient(colors = listOf(
+                    Color(0xFFE1DEDE).copy(pickerVisibility),
+                    Color(0xFFDBD9D9).copy(pickerVisibility)
+                )))
+            )
+
+            //a crutch that overlaps numbers that go beyond the picker's bottom boundaries
+            Box(modifier = Modifier
+                .fillMaxWidth(0.6f)
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 27.dp)
+                .height(15.dp)
+                .background(Brush.horizontalGradient(colors = listOf(
+                    Color(0xFFDBD9D9).copy(pickerVisibility),
+                    Color(0xFFD5D4D4).copy(pickerVisibility)
+                )))
+            )
         }
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.Q)
 @Composable
 fun StyledNumberPicker(
+    modifier: Modifier = Modifier,
     value: Int,
     values: List<String>,
+    showDivider: Boolean = false,
     name: String,
     onValueChanged: (Int) -> Unit
 ) {
     Box(
-        modifier = Modifier.size(width = 50.dp, height = 140.dp),
+        modifier = modifier.size(width = 90.dp, height = 140.dp),
     ) {
-        Text(
-            modifier = Modifier.align(Alignment.BottomCenter),
-            text = name,
-            fontFamily = Orbitron,
-            fontSize = 16.sp,
-            color = Black.copy(pickerVisibility),
-            fontWeight = FontWeight.SemiBold
+        //shadows behind number picker
+        Image(
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxHeight(0.8f)
+                .alpha(pickerVisibility),
+            painter = painterResource(id = R.drawable.picker_shadow),
+            contentDescription = null,
+            contentScale = ContentScale.FillBounds
         )
+
+        if(showDivider) {
+            //colon divider
+            Text(
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .padding(bottom = 29.dp, end = 4.dp),
+                text = ":",
+                color = Black.copy(pickerVisibility),
+                fontFamily = Orbitron,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.SemiBold,
+                textAlign = TextAlign.Center
+            )
+        }
 
         //NumberPicker
         Box(
             modifier = Modifier
                 .align(Alignment.TopCenter)
-                .fillMaxWidth()
+                .fillMaxWidth(0.56f)
                 .fillMaxHeight(0.80f),
         ) {
             AndroidView(
@@ -189,27 +218,29 @@ fun StyledNumberPicker(
                 factory = { context ->
                     NumberPicker(context).apply {
                         minValue = 0
+                        wrapSelectorWheel = true
                         maxValue = values.size - 1
                         displayedValues = values.toTypedArray()
-                        textColor = Black.copy(pickerVisibility).hashCode()
-                        textSize = 60f
+//                        textColor = Black.copy(pickerVisibility).hashCode()
+//                        textSize = 60f
                         setOnValueChangedListener { numberPicker, i, i2 ->
                             onValueChanged(numberPicker.value)
                         }
                     }
                 },
-                update = { picker ->
-                    picker.apply {
-                        textColor = Black.copy(pickerVisibility).hashCode()
-                    }
-
-                }
+//                update = { picker ->
+//                    picker.apply {
+//                        textColor = Black.copy(pickerVisibility).hashCode()
+//                    }
+//
+//                }
             )
 
             //shadow effect
             Canvas(
                 modifier = Modifier
-                    .size(50.dp)
+                    .height(45.dp)
+                    .fillMaxWidth()
                     .align(Alignment.BottomCenter)
             ) {
                 drawRect(
@@ -219,11 +250,6 @@ fun StyledNumberPicker(
                             FaintShadow.copy(
                                 if (pickerVisibility - FaintShadow.alpha >= 0)
                                     pickerVisibility - FaintShadow.alpha
-                                else 0f
-                            ),
-                            FaintShadow1.copy(
-                                if (pickerVisibility - FaintShadow1.alpha >= 0)
-                                    pickerVisibility - FaintShadow1.alpha
                                 else 0f
                             ),
                             Color.Transparent
@@ -236,7 +262,8 @@ fun StyledNumberPicker(
             Canvas(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .size(60.dp)
+                    .fillMaxWidth()
+                    .height(45.dp)
             ) {
                 drawRect(
                     brush = Brush.verticalGradient(
@@ -258,6 +285,15 @@ fun StyledNumberPicker(
                 )
             }
         }
+
+        Text(
+            modifier = Modifier.align(Alignment.BottomCenter),
+            text = name,
+            fontFamily = Orbitron,
+            fontSize = 16.sp,
+            color = Black.copy(pickerVisibility),
+            fontWeight = FontWeight.SemiBold
+        )
     }
 }
 
@@ -273,7 +309,7 @@ fun TestPreview() {
                 .background(Color(0xFFDAD8D8)),
             contentAlignment = Alignment.Center
         ) {
-
+           PickerSection(timerService = TimerService())
         }
     }
 }

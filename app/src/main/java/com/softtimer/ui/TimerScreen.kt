@@ -1,51 +1,51 @@
 package com.softtimer.ui
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animate
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.ripple.LocalRippleTheme
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.constraintlayout.compose.ConstraintLayout
+import com.airbnb.lottie.compose.LottieAnimation
+import com.airbnb.lottie.compose.LottieCompositionSpec
+import com.airbnb.lottie.compose.rememberLottieComposition
 import com.softtimer.R
 import com.softtimer.service.ServiceHelper
 import com.softtimer.service.TimerService
 import com.softtimer.service.TimerState
-import com.softtimer.ui.theme.Black
+import com.softtimer.ui.theme.MID_ANIMATION_DURATION
+import com.softtimer.ui.theme.SHORT_ANIMATION_DURATION
 import com.softtimer.ui.theme.SoftTImerTheme
 import com.softtimer.util.Constants.ACTION_SERVICE_RESET
 import com.softtimer.util.Constants.ACTION_SERVICE_START
 import com.softtimer.util.Constants.ACTION_SERVICE_STOP
+import kotlinx.coroutines.launch
 
 @Composable
 fun TimerScreen(
@@ -65,24 +65,34 @@ fun TimerScreen(
             .padding(bottom = 64.dp),
         contentAlignment = Alignment.Center
     ) {
-        Column(
+        ConstraintLayout(
             modifier = Modifier
                 .fillMaxSize()
-                .align(Alignment.TopCenter),
-            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(94.dp))
+            val (clock, picker) = createRefs()
+            val bottomGuideLine = createGuidelineFromBottom(fraction = 0.12f)
+            val topGuideLine = createGuidelineFromTop(fraction = 0.16f)
 
-            Clock(timerService = timerService)
+            Clock(
+                modifier = Modifier.constrainAs(clock) {
+                    top.linkTo(topGuideLine)
+                    start.linkTo(parent.start)
+                    end.linkTo(parent.end)
+                },
+                timerService = timerService
+            )
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            PickerSection(timerService = timerService)
-
-            Spacer(modifier = Modifier.height(154.dp))
-
-
+            PickerSection(
+                modifier = Modifier.constrainAs(picker) {
+                    top.linkTo(clock.bottom)
+                    start.linkTo(parent.start)
+                    end.linkTo(parent.end)
+                    bottom.linkTo(bottomGuideLine, margin = 18.dp)
+                },
+                timerService = timerService
+            )
         }
+
         ActionsSection(
             modifier = Modifier.align(Alignment.BottomCenter),
             timerService = timerService
@@ -101,12 +111,8 @@ fun ActionsSection(modifier: Modifier = Modifier, timerService: TimerService) {
         horizontalArrangement = Arrangement.SpaceEvenly
     ) {
         //restart button
-        CustomButton(
+        RestartButton(
             size = 50.dp,
-            iconSize = 13.dp,
-            iconOffset = Offset(x = -1f, y = -0.3f),
-            icon = ImageVector.vectorResource(id = R.drawable.ic_restart),
-            contentDescription = "reset timer"
         ) {
             ServiceHelper.triggerForegroundService(
                 context = context,
@@ -114,15 +120,9 @@ fun ActionsSection(modifier: Modifier = Modifier, timerService: TimerService) {
             )
         }
 
-        //start/stop button
-        CustomButton(
+        PlayPauseButton(
             size = 90.dp,
-            iconSize = 18.dp,
-            icon = if (timerState == TimerState.Started || timerState == TimerState.Running)
-                ImageVector.vectorResource(id = R.drawable.ic_pause)
-            else
-                ImageVector.vectorResource(id = R.drawable.ic_start),
-            contentDescription = if (timerState == TimerState.Running) "pause timer" else "start timer"
+            timerState = timerState
         ) {
             ServiceHelper.triggerForegroundService(
                 context = context,
@@ -131,32 +131,61 @@ fun ActionsSection(modifier: Modifier = Modifier, timerService: TimerService) {
             )
         }
 
-        //theme button
-        CustomButton(
-            size = 50.dp,
-            iconSize = 13.dp,
-            iconOffset = Offset(x = -0.5f, y = 0f),
-            icon = ImageVector.vectorResource(id = R.drawable.ic_sun),
-            contentDescription = "change theme"
-        ) {
+        ThemeButton(size = 50.dp) {
             //TODO change theme
         }
     }
 }
 
 @Composable
-fun CustomButton(
-    size: Dp,//90 to mid
-    icon: ImageVector,//18 to mid
-    iconOffset: Offset = Offset(0f, 0f),
-    iconSize: Dp,
-    contentDescription: String,
+fun RestartButton(
+    size: Dp,
     onClick: () -> Unit
 ) {
     val interactionSource = remember { MutableInteractionSource() }
+    val restartAnimation by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.anim_reset))
+    var isPlaying by remember { mutableStateOf(false) }
+    var progress by remember{ mutableStateOf(1f) }
+
+
+    LaunchedEffect(key1 = isPlaying) {
+        if(isPlaying) {
+            var targetValue = 1f
+
+            animate(initialValue = progress,
+                targetValue = targetValue,
+                animationSpec =  tween(
+                    durationMillis = MID_ANIMATION_DURATION,
+                    easing = LinearEasing
+                )
+            ) { value, _ ->
+                progress = value
+//                if(value == targetValue) isPlaying = false
+            }
+
+            targetValue = 0.5f
+
+            animate(initialValue = 0f,
+                targetValue = targetValue,
+                animationSpec =  tween(
+                    durationMillis = MID_ANIMATION_DURATION,
+                    easing = LinearEasing
+                )
+            ) { value, _ ->
+                progress = value
+                if(value == targetValue) isPlaying = false
+            }
+        } else {
+            progress = 0.5f
+        }
+    }
+
     Box(
         modifier = Modifier
-            .clickable(interactionSource = interactionSource, indication = null) { onClick() },
+            .clickable(interactionSource = interactionSource, indication = null) {
+                onClick()
+                isPlaying = true
+            },
         contentAlignment = Alignment.Center
     ) {
         Image(
@@ -164,13 +193,173 @@ fun CustomButton(
             painter = painterResource(id = R.drawable.button),
             contentDescription = null
         )
-        Icon(
+
+        LottieAnimation(
             modifier = Modifier
-                .size(iconSize)
-                .offset(x = iconOffset.x.dp, y = iconOffset.y.dp),
-            imageVector = icon,
-            tint = Black,
-            contentDescription = contentDescription,
+                .size(14.dp)
+                .offset(x = (-1).dp, y = (-0.3).dp),
+            composition = restartAnimation,
+            progress = { progress }
+        )
+    }
+}
+
+@Composable
+fun PlayPauseButton(
+    size: Dp,
+    timerState: TimerState,
+    onClick: () -> Unit
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    var isAnimPlaying by remember { mutableStateOf(false) }
+    val pauseAnimComposition by rememberLottieComposition(
+        LottieCompositionSpec.RawRes(
+            R.raw.anim_pause
+        )
+    )
+    var progress by remember {
+        mutableStateOf(0f)
+    }
+
+    //if () {}
+
+    LaunchedEffect(key1 = isAnimPlaying, key2 =  timerState) {
+        if(timerState == TimerState.Started || timerState == TimerState.Running) {
+            val targetValue = 1f
+            animate(initialValue = progress,
+                targetValue = targetValue,
+                animationSpec =  tween(
+                    durationMillis = SHORT_ANIMATION_DURATION,
+                    easing = LinearEasing
+                )
+            ) { value, _ ->
+                progress = value
+                if(value == targetValue) isAnimPlaying = false
+            }
+        } else {
+            val targetValue = 0f
+            animate(initialValue = progress,
+                targetValue = targetValue,
+                animationSpec =  tween(
+                    durationMillis = SHORT_ANIMATION_DURATION,
+                    easing = LinearEasing
+                )
+            ) { value, _ ->
+                progress = value
+                if(value == targetValue) isAnimPlaying = false
+            }
+        }
+    }
+
+    Box(
+        modifier = Modifier
+            .clickable(interactionSource = interactionSource, indication = null) {
+                if(!isAnimPlaying) {
+                    isAnimPlaying = true
+                    onClick()
+                }
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        Image(
+            modifier = Modifier.size(size),
+            painter = painterResource(id = R.drawable.button),
+            contentDescription = null
+        )
+
+        LottieAnimation(
+            modifier = Modifier
+                .size(20.dp)
+                .offset(x = (-1).dp, y = (-0.3).dp),
+            composition = pauseAnimComposition,
+            progress = { progress }
+        )
+    }
+}
+
+
+@Composable
+fun ThemeButton(
+    size: Dp,
+    onClick: () -> Unit
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    var isLightTheme by remember { mutableStateOf(true) }
+    var isAnimPlaying by remember { mutableStateOf(false) }
+    val composition by rememberLottieComposition(
+        LottieCompositionSpec.RawRes(
+            R.raw.anim_moon_sun
+        )
+    )
+
+    var progress by remember {
+        mutableStateOf(0f)
+    }
+
+//    val animProgress by animateLottieCompositionAsState(
+//        composition = composition,
+//        isPlaying = isAnimPlaying
+//    )
+
+    LaunchedEffect(key1 = isAnimPlaying) {
+        if(isAnimPlaying) {
+            if (isLightTheme) {
+                val targetValue = 1f
+                progress = 0.5f
+
+                animate(initialValue = progress,
+                    targetValue = 1f,
+                    animationSpec =  tween(
+                        durationMillis = MID_ANIMATION_DURATION,
+                        easing = LinearEasing
+                    )
+                ) { value, _ ->
+                    progress = value
+                    if(value == targetValue) isAnimPlaying = false
+                }
+            } else {
+                val targetValue = 0.5f
+                progress = 0f
+
+                animate(initialValue = progress,
+                    targetValue = targetValue,
+                    animationSpec =  tween(
+                        durationMillis = MID_ANIMATION_DURATION,
+                        easing = LinearEasing
+                    )
+                ) { value, _ ->
+                    progress = value
+                    if(value == targetValue) isAnimPlaying = false
+                }
+            }
+        }
+    }
+
+
+
+    Box(
+        modifier = Modifier
+            .clickable(interactionSource = interactionSource, indication = null) {
+                if(!isAnimPlaying) {
+                    onClick()
+                    isAnimPlaying = true
+                    isLightTheme = !isLightTheme
+                }
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        Image(
+            modifier = Modifier.size(size),
+            painter = painterResource(id = R.drawable.button),
+            contentDescription = null
+        )
+
+        LottieAnimation(
+            modifier = Modifier
+                .size(48.dp)
+                .offset(x = (-1).dp, y = (-0.3).dp),
+            composition = composition,
+            progress = { progress }
         )
     }
 }

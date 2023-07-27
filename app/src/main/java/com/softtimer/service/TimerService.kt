@@ -11,7 +11,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.app.NotificationCompat
-import com.softtimer.ui.theme.MidAnimationDelay
+import com.softtimer.ui.theme.MID_ANIMATION_DELAY
 import com.softtimer.util.Constants.ACTION_SERVICE_RESET
 import com.softtimer.util.Constants.ACTION_SERVICE_START
 import com.softtimer.util.Constants.ACTION_SERVICE_STOP
@@ -25,7 +25,6 @@ import com.softtimer.util.pad
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -140,7 +139,7 @@ class TimerService : Service() {
                 if (timerState == TimerState.Idle) {
                     timerState = TimerState.Started
                     Log.d(TAG, "started!")
-                    delay(MidAnimationDelay)
+                    delay(MID_ANIMATION_DELAY)
                 }
                 this@TimerService.timerState = TimerState.Running
                 Log.d(TAG, "running!")
@@ -170,7 +169,7 @@ class TimerService : Service() {
         serviceScope.launch {
             this@TimerService.timerState = TimerState.Reset
 
-            delay(MidAnimationDelay)
+            delay(MID_ANIMATION_DELAY)
 
             this@TimerService.timerState = TimerState.Idle
 
@@ -259,7 +258,7 @@ class TimerService : Service() {
         runBlocking {
             this@TimerService.timerState = TimerState.Reset
 
-            delay(MidAnimationDelay)
+            delay(MID_ANIMATION_DELAY)
 
             this@TimerService.timerState = TimerState.Idle
             hState = 0

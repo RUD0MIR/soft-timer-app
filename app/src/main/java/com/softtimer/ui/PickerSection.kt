@@ -1,8 +1,6 @@
 package com.softtimer.ui
 
-import android.os.Build
 import android.widget.NumberPicker
-import androidx.annotation.RequiresApi
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.tween
@@ -11,7 +9,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -20,7 +17,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -49,8 +45,7 @@ import com.softtimer.ui.theme.Black
 import com.softtimer.ui.theme.FaintLight
 import com.softtimer.ui.theme.FaintLight1
 import com.softtimer.ui.theme.FaintShadow
-import com.softtimer.ui.theme.FaintShadow1
-import com.softtimer.ui.theme.MidAnimationDuration
+import com.softtimer.ui.theme.MID_ANIMATION_DURATION
 import com.softtimer.ui.theme.Orbitron
 import com.softtimer.ui.theme.SoftTImerTheme
 import com.softtimer.util.getNumbersWithPad
@@ -59,7 +54,7 @@ private var pickerVisibility by mutableStateOf(1f)
 private var isVisible by mutableStateOf(true)
 
 @Composable
-fun PickerSection(timerService: TimerService) {
+fun PickerSection(modifier: Modifier = Modifier,timerService: TimerService) {
     val timerState = timerService.timerState
     val scope = rememberCoroutineScope()
 
@@ -70,7 +65,7 @@ fun PickerSection(timerService: TimerService) {
                     initialValue = pickerVisibility,
                     targetValue = 0f,
                     animationSpec = tween(
-                        durationMillis = MidAnimationDuration,
+                        durationMillis = MID_ANIMATION_DURATION,
                         easing = LinearEasing
                     )
                 )
@@ -88,7 +83,7 @@ fun PickerSection(timerService: TimerService) {
                     initialValue = pickerVisibility,
                     targetValue = 1f,
                     animationSpec = tween(
-                        durationMillis = MidAnimationDuration,
+                        durationMillis = MID_ANIMATION_DURATION,
                         easing = LinearEasing
                     )
                 )
@@ -104,9 +99,9 @@ fun PickerSection(timerService: TimerService) {
     if (isVisible) {
         Box(
             contentAlignment = Alignment.Center,
-            modifier = Modifier
+            modifier = modifier
                 .fillMaxWidth()
-                .height(164.dp)
+                .height(139.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -141,29 +136,6 @@ fun PickerSection(timerService: TimerService) {
                     timerService.sState = selectedItem
                 }
             }
-
-            //a crutch that overlaps numbers that go beyond the picker's top boundaries
-            Box(modifier = Modifier
-                .fillMaxWidth(0.6f)
-                .align(Alignment.TopCenter)
-                .height(13.dp)
-                .background(Brush.horizontalGradient(colors = listOf(
-                    Color(0xFFE1DEDE).copy(pickerVisibility),
-                    Color(0xFFDBD9D9).copy(pickerVisibility)
-                )))
-            )
-
-            //a crutch that overlaps numbers that go beyond the picker's bottom boundaries
-            Box(modifier = Modifier
-                .fillMaxWidth(0.6f)
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 27.dp)
-                .height(15.dp)
-                .background(Brush.horizontalGradient(colors = listOf(
-                    Color(0xFFDBD9D9).copy(pickerVisibility),
-                    Color(0xFFD5D4D4).copy(pickerVisibility)
-                )))
-            )
         }
     }
 }
@@ -218,22 +190,23 @@ fun StyledNumberPicker(
                 factory = { context ->
                     NumberPicker(context).apply {
                         minValue = 0
-                        wrapSelectorWheel = true
+                        isSoundEffectsEnabled = true
+                        clipToOutline = true
+                        alpha = pickerVisibility
                         maxValue = values.size - 1
                         displayedValues = values.toTypedArray()
-//                        textColor = Black.copy(pickerVisibility).hashCode()
-//                        textSize = 60f
+                        clipToPadding = true
+
                         setOnValueChangedListener { numberPicker, i, i2 ->
                             onValueChanged(numberPicker.value)
                         }
                     }
                 },
-//                update = { picker ->
-//                    picker.apply {
-//                        textColor = Black.copy(pickerVisibility).hashCode()
-//                    }
-//
-//                }
+                update = { picker ->
+                    picker.apply {
+                        alpha = pickerVisibility
+                    }
+                }
             )
 
             //shadow effect

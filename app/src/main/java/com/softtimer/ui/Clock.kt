@@ -63,10 +63,6 @@ fun Clock(
     val scope = rememberCoroutineScope()
     val durationInMillis = timerService.duration.inWholeMilliseconds.toInt()
 
-    var shadowPosition by remember {
-        mutableStateOf(0f)
-    }
-
     LaunchedEffect(timerService.timerState) {
         when (timerService.timerState) {
             TimerState.Started -> {
@@ -117,10 +113,7 @@ fun Clock(
             }
 
             TimerState.Reset -> {
-                Log.d("TAG", "reset")
-
                 scope.launch {
-                    Log.d("TAG", "progress bar reset animation")
                     //progress bar reset animation
                     animate(
                         initialValue = progressBarSweepAngle,
@@ -135,7 +128,6 @@ fun Clock(
                     }
                 }
                 scope.launch {
-                    Log.d("TAG", "unzoom animation")
                     animate(
                         initialValue = sizeModifier,
                         targetValue = 1.1f,
@@ -150,15 +142,14 @@ fun Clock(
                 }
             }
 
-            else -> {
-                Log.d("TAG", "else ?")
-            }
+            else -> {}
         }
     }
 
     Box(
         modifier = modifier
-            .fillMaxWidth().height(260.dp * sizeModifier),
+            .fillMaxWidth()
+            .height(260.dp * sizeModifier),
         contentAlignment = Alignment.Center
     ) {
 
@@ -187,7 +178,6 @@ fun Clock(
 
         Indicator(
             modifier = Modifier.offset(y = (-76f * sizeModifier).dp),
-            size = 100 * sizeModifier,//100
             sweepAngle = progressBarSweepAngle
         )
 
@@ -335,29 +325,41 @@ fun ProgressBar(sweepAngle: Float, diameter: Float) {
 }
 
 @Composable
-fun Indicator(modifier: Modifier = Modifier, sweepAngle: Float, size: Float) {
+fun Indicator(modifier: Modifier = Modifier, sweepAngle: Float) {
+    var shadowPosition by remember {
+        mutableStateOf(0f)
+    }
+
     Box(
         modifier = Modifier
             .rotate(sweepAngle)
-            .size(size.dp),//100.dp
+            .size(width = 20.dp * sizeModifier, height = 70.dp * sizeModifier),//100.dp
         contentAlignment = Alignment.Center
     ) {
-        Box(
+        Image(
             modifier = modifier
-                .rectShadow(
-                    modifier = Modifier
-                        .rotate(2f),
-                    blurRadius = (2 * sizeModifier).dp,//2
-                    spread = (2 * sizeModifier).dp,//2
-                    offsetX = (10 * sizeModifier).dp,//10
-                    offsetY = (7 * sizeModifier).dp,//7
-                    color = DarkShadow
-                )
-                .size(
-                    width = (1f * sizeModifier).dp,
-                    height = (58f * sizeModifier).dp
-                )//width = 1, height = 58.dp
+                .size(height = 60.dp * sizeModifier, width = 10.dp * sizeModifier)
+                .align(Alignment.BottomEnd),
+            painter = painterResource(id = R.drawable.indicator_shadow),
+            contentScale = ContentScale.FillBounds,
+            contentDescription = null,
         )
+//        Box(
+//            modifier = modifier
+//                .rectShadow(
+//                    modifier = Modifier
+//                        .rotate(2f),
+//                    blurRadius = (2 * sizeModifier).dp,//2
+//                    spread = (2 * sizeModifier).dp,//2
+//                    offsetX = (10 * sizeModifier).dp,//10
+//                    offsetY = (7 * sizeModifier).dp,//7
+//                    color = DarkShadow
+//                )
+//                .size(
+//                    width = (1f * sizeModifier).dp,
+//                    height = (58f * sizeModifier).dp
+//                )//width = 1, height = 58.dp
+//        )
 
         Box(
             modifier = modifier

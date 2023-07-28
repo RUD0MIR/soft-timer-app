@@ -74,6 +74,8 @@ class TimerService : Service() {
         return sState.pad()
     }
 
+//    val isClockAnimationsRunning by mutableStateOf(false)
+
     override fun onBind(p0: Intent?) = binder
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {

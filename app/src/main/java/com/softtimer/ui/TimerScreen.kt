@@ -224,7 +224,8 @@ fun PlayPauseButton(
     //if () {}
 
     LaunchedEffect(key1 = isAnimPlaying, key2 =  timerState) {
-        if(timerState == TimerState.Started || timerState == TimerState.Running) {
+        if(timerState == TimerState.Running) {
+            //from pause icon to play icon animation
             val targetValue = 1f
             animate(initialValue = progress,
                 targetValue = targetValue,
@@ -236,7 +237,8 @@ fun PlayPauseButton(
                 progress = value
                 if(value == targetValue) isAnimPlaying = false
             }
-        } else {
+        } else if(timerState == TimerState.Idle || timerState == TimerState.Paused) {
+            //from play icon to pause icon animation
             val targetValue = 0f
             animate(initialValue = progress,
                 targetValue = targetValue,
@@ -254,7 +256,7 @@ fun PlayPauseButton(
     Box(
         modifier = Modifier
             .clickable(interactionSource = interactionSource, indication = null) {
-                if(!isAnimPlaying) {
+                if(!isAnimPlaying && timerState != TimerState.Started && timerState != TimerState.Reset) {
                     isAnimPlaying = true
                     onClick()
                 }
@@ -296,11 +298,6 @@ fun ThemeButton(
         mutableStateOf(0f)
     }
 
-//    val animProgress by animateLottieCompositionAsState(
-//        composition = composition,
-//        isPlaying = isAnimPlaying
-//    )
-
     LaunchedEffect(key1 = isAnimPlaying) {
         if(isAnimPlaying) {
             if (isLightTheme) {
@@ -334,8 +331,6 @@ fun ThemeButton(
             }
         }
     }
-
-
 
     Box(
         modifier = Modifier

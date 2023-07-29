@@ -41,7 +41,6 @@ import com.softtimer.ui.theme.Black
 import com.softtimer.ui.theme.Blue
 import com.softtimer.ui.theme.BlueFlash
 import com.softtimer.ui.theme.BlueLight
-import com.softtimer.ui.theme.DarkShadow
 import com.softtimer.ui.theme.FaintShadow
 import com.softtimer.ui.theme.Orbitron
 import com.softtimer.ui.theme.SoftTImerTheme
@@ -49,8 +48,8 @@ import com.softtimer.ui.theme.LightBlue
 import com.softtimer.ui.theme.MID_ANIMATION_DURATION
 import com.softtimer.ui.theme.MidBlue
 import com.softtimer.util.arcShadow
-import com.softtimer.util.rectShadow
 import kotlinx.coroutines.launch
+import kotlin.math.sin
 
 private var sizeModifier by mutableStateOf(1.1f)
 private var progressBarSweepAngle by mutableStateOf(0f)
@@ -336,31 +335,26 @@ fun Indicator(modifier: Modifier = Modifier, sweepAngle: Float) {
             .size(width = 20.dp * sizeModifier, height = 70.dp * sizeModifier),//100.dp
         contentAlignment = Alignment.Center
     ) {
+        //Indicator shadow
         Image(
             modifier = modifier
                 .size(height = 60.dp * sizeModifier, width = 10.dp * sizeModifier)
-                .align(Alignment.BottomEnd),
+                .align(Alignment.BottomEnd)
+                .offset(x = (-5).dp)
+                .offset(
+                    x = calculateShadowXOffset(
+                        sweepAngle = sweepAngle,
+                        maxOffset = 8f,
+                        minOffset = -10f,
+                        lightSourceOffset = 345f
+                    ).dp
+                ),
             painter = painterResource(id = R.drawable.indicator_shadow),
             contentScale = ContentScale.FillBounds,
             contentDescription = null,
         )
-//        Box(
-//            modifier = modifier
-//                .rectShadow(
-//                    modifier = Modifier
-//                        .rotate(2f),
-//                    blurRadius = (2 * sizeModifier).dp,//2
-//                    spread = (2 * sizeModifier).dp,//2
-//                    offsetX = (10 * sizeModifier).dp,//10
-//                    offsetY = (7 * sizeModifier).dp,//7
-//                    color = DarkShadow
-//                )
-//                .size(
-//                    width = (1f * sizeModifier).dp,
-//                    height = (58f * sizeModifier).dp
-//                )//width = 1, height = 58.dp
-//        )
 
+        //Indicator
         Box(
             modifier = modifier
                 .background(Blue)
@@ -370,6 +364,28 @@ fun Indicator(modifier: Modifier = Modifier, sweepAngle: Float) {
                 )
         )
     }
+}
+
+fun calculateShadowXOffset(
+    sweepAngle: Float,
+    minOffset: Float,
+    maxOffset: Float,
+    lightSourceOffset: Float
+): Float {
+    val totalCircle = 360f
+
+    // Calculate the angle difference between the light source and the current sweep angle
+    val angleDifference = sweepAngle - lightSourceOffset
+
+    // Normalize the angle difference
+    val normalizedAngle = (angleDifference + totalCircle) % totalCircle
+
+    // Calculate the offset based on the normalized angle
+    val offset = (maxOffset * sin(Math.toRadians(normalizedAngle.toDouble()))).toFloat()
+
+    // Apply the minimum offset
+    val finalOffset = if (offset < minOffset) minOffset else offset
+    return finalOffset
 }
 
 @Preview(showBackground = true)

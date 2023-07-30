@@ -49,6 +49,7 @@ import com.softtimer.ui.theme.MID_ANIMATION_DURATION
 import com.softtimer.ui.theme.MidBlue
 import com.softtimer.util.arcShadow
 import kotlinx.coroutines.launch
+import kotlin.math.abs
 import kotlin.math.sin
 
 private var sizeModifier by mutableStateOf(1.1f)
@@ -199,31 +200,65 @@ fun TimerNumbers(timerService: TimerService) {
     val hours = timerService.getH()
     val minutes = timerService.getMin()
     val seconds = timerService.getS()
-    Text(
-        modifier = Modifier
-            .offset(y = (3f * sizeModifier).dp),//3
-        text = buildString {
-            if (isHourVisible) append("${hours}:")
-            append(minutes)
-            append(":")
-            append(seconds)
-        },
-        fontFamily = Orbitron,
-        color = FaintShadow,
-        fontSize = if (isHourVisible) (16f * sizeModifier).sp else (20f * sizeModifier).sp//16//20
-    )
 
-    Text(
-        text = buildString {
-            if (isHourVisible) append("${hours}:")
-            append(minutes)
-            append(":")
-            append(seconds)
-        },
-        fontFamily = Orbitron,
-        color = Black,
-        fontSize = if (isHourVisible) (16f * sizeModifier).sp else (20f * sizeModifier).sp//16//20
-    )
+    Box(
+        modifier = Modifier
+            .size(width = 100.dp * sizeModifier, height = 60.dp * sizeModifier),
+        contentAlignment = Alignment.Center
+    ) {
+        //Numbers shadow
+        Text(
+            modifier = Modifier
+                .offset(y = (3f * sizeModifier).dp),//3
+            text = if (timerService.timerState == TimerState.Ringing) {
+                "00:00"
+            } else {
+                buildString {
+                    if (isHourVisible) append("${hours}:")
+                    append(minutes)
+                    append(":")
+                    append(seconds)
+                }
+            },
+            fontFamily = Orbitron,
+            color = FaintShadow,
+            fontSize = if (isHourVisible) (16f * sizeModifier).sp else (20f * sizeModifier).sp//16//20
+        )
+
+        //Clock numbers
+        Text(
+            text = if (timerService.timerState == TimerState.Ringing) {
+                "00:00"
+            } else {
+                buildString {
+                    if (isHourVisible) append("${hours}:")
+                    append(minutes)
+                    append(":")
+                    append(seconds)
+                }
+            },
+            fontFamily = Orbitron,
+            color = Black,
+            fontSize = if (isHourVisible) (16f * sizeModifier).sp else (20f * sizeModifier).sp//16//20
+        )
+
+        if (timerService.timerState == TimerState.Ringing) {
+            Text(
+                modifier = Modifier.align(Alignment.BottomCenter),
+                text = buildString {
+                    append("-")
+                    append(minutes)
+                    append(":")
+                    append(seconds)
+                    append(":")
+                    append("00")
+                },
+                fontFamily = Orbitron,
+                color = Blue,
+                fontSize = (10f * sizeModifier).sp
+            )
+        }
+    }
 }
 
 @Composable
@@ -344,8 +379,8 @@ fun Indicator(modifier: Modifier = Modifier, sweepAngle: Float) {
                 .offset(
                     x = calculateShadowXOffset(
                         sweepAngle = sweepAngle,
-                        maxOffset = 8f,
-                        minOffset = -10f,
+                        maxOffset = 5f,//8
+                        minOffset = -5f,//-10
                         lightSourceOffset = 345f
                     ).dp
                 ),
@@ -381,10 +416,13 @@ fun calculateShadowXOffset(
     val normalizedAngle = (angleDifference + totalCircle) % totalCircle
 
     // Calculate the offset based on the normalized angle
-    val offset = (maxOffset * sin(Math.toRadians(normalizedAngle.toDouble()))).toFloat()
+    val offset = (10f * sin(Math.toRadians(normalizedAngle.toDouble()))).toFloat()
 
-    // Apply the minimum offset
-    val finalOffset = if (offset < minOffset) minOffset else offset
+    // Apply the minimum and maximum offset
+    var finalOffset: Float
+    finalOffset = if (offset < minOffset) minOffset else offset
+    finalOffset = if (offset > maxOffset) maxOffset else offset
+
     return finalOffset
 }
 

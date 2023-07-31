@@ -1,8 +1,10 @@
 package com.softtimer.ui
 
 import android.widget.NumberPicker
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animate
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
@@ -50,50 +52,33 @@ import com.softtimer.ui.theme.Orbitron
 import com.softtimer.ui.theme.SoftTImerTheme
 import com.softtimer.util.getNumbersWithPad
 
-private var pickerVisibility by mutableStateOf(1f)
-private var isVisible by mutableStateOf(true)
-
 @Composable
 fun PickerSection(modifier: Modifier = Modifier,timerService: TimerService) {
     val timerState = timerService.timerState
-    val scope = rememberCoroutineScope()
 
-    LaunchedEffect(key1 = timerState) {
-        when (timerState) {
-            TimerState.Started -> {
-                animate(
-                    initialValue = pickerVisibility,
-                    targetValue = 0f,
-                    animationSpec = tween(
-                        durationMillis = MID_ANIMATION_DURATION,
-                        easing = LinearEasing
-                    )
-                )
-                { value, _ ->
-                    pickerVisibility = value
-                    if (pickerVisibility < 0.1f) {
-                        isVisible = false
-                    }
-                }
-            }
+    var pickerVisibilityValue by remember {
+        mutableStateOf(1f)
+    }
+    val pickerVisibility by animateFloatAsState(
+        targetValue = pickerVisibilityValue,
+        animationSpec = tween(
+            durationMillis = MID_ANIMATION_DURATION,
+            easing = LinearEasing
+        )
+    )
 
-            TimerState.Reset -> {
-                isVisible = true
-                animate(
-                    initialValue = pickerVisibility,
-                    targetValue = 1f,
-                    animationSpec = tween(
-                        durationMillis = MID_ANIMATION_DURATION,
-                        easing = LinearEasing
-                    )
-                )
-                { value, _ ->
-                    pickerVisibility = value
-                }
-            }
+    var isVisible by remember {
+        mutableStateOf(true)
+    }
 
-            else -> {}
+    when(timerState) {
+        TimerState.Started -> pickerVisibilityValue = 0f
+        TimerState.Running -> isVisible = false
+        TimerState.Reset ->  {
+            pickerVisibilityValue = 1f
+            isVisible = true
         }
+        else -> {}
     }
 
     if (isVisible) {
@@ -109,8 +94,9 @@ fun PickerSection(modifier: Modifier = Modifier,timerService: TimerService) {
                 horizontalArrangement = Arrangement.Center
             ) {
                 StyledNumberPicker(
-                    modifier = Modifier.offset(x = 14.dp),
-                    value = timerService.hState,
+                    modifier = Modifier
+                        .offset(x = 14.dp)
+                        .alpha(pickerVisibility),
                     values = getNumbersWithPad(1..23),
                     showDivider = true,
                     name = "h"
@@ -119,7 +105,7 @@ fun PickerSection(modifier: Modifier = Modifier,timerService: TimerService) {
                 }
 
                 StyledNumberPicker(
-                    value = timerService.minState,
+                    modifier = Modifier.alpha(pickerVisibility),
                     values = getNumbersWithPad(1..59),
                     name = "min",
                     showDivider = true,
@@ -128,8 +114,9 @@ fun PickerSection(modifier: Modifier = Modifier,timerService: TimerService) {
                 }
 
                 StyledNumberPicker(
-                modifier = Modifier.offset(x = (-14).dp),
-                    value = timerService.sState,
+                modifier = Modifier
+                    .offset(x = (-14).dp)
+                    .alpha(pickerVisibility),
                     values = getNumbersWithPad(1..59),
                     name = "s"
                 ) { selectedItem ->
@@ -143,7 +130,6 @@ fun PickerSection(modifier: Modifier = Modifier,timerService: TimerService) {
 @Composable
 fun StyledNumberPicker(
     modifier: Modifier = Modifier,
-    value: Int,
     values: List<String>,
     showDivider: Boolean = false,
     name: String,
@@ -156,8 +142,7 @@ fun StyledNumberPicker(
         Image(
             modifier = Modifier
                 .fillMaxWidth()
-                .fillMaxHeight(0.8f)
-                .alpha(pickerVisibility),
+                .fillMaxHeight(0.8f),
             painter = painterResource(id = R.drawable.picker_shadow),
             contentDescription = null,
             contentScale = ContentScale.FillBounds
@@ -170,7 +155,7 @@ fun StyledNumberPicker(
                     .align(Alignment.CenterEnd)
                     .padding(bottom = 29.dp, end = 4.dp),
                 text = ":",
-                color = Black.copy(pickerVisibility),
+                color = Black,
                 fontFamily = Orbitron,
                 fontSize = 18.sp,
                 fontWeight = FontWeight.SemiBold,
@@ -192,7 +177,6 @@ fun StyledNumberPicker(
                         minValue = 0
                         isSoundEffectsEnabled = true
                         clipToOutline = true
-                        alpha = pickerVisibility
                         maxValue = values.size - 1
                         displayedValues = values.toTypedArray()
                         clipToPadding = true
@@ -200,11 +184,6 @@ fun StyledNumberPicker(
                         setOnValueChangedListener { numberPicker, i, i2 ->
                             onValueChanged(numberPicker.value)
                         }
-                    }
-                },
-                update = { picker ->
-                    picker.apply {
-                        alpha = pickerVisibility
                     }
                 }
             )
@@ -220,11 +199,7 @@ fun StyledNumberPicker(
                     brush = Brush.verticalGradient(
                         colors = listOf(
                             Color.Transparent,
-                            FaintShadow.copy(
-                                if (pickerVisibility - FaintShadow.alpha >= 0)
-                                    pickerVisibility - FaintShadow.alpha
-                                else 0f
-                            ),
+                            FaintShadow,
                             Color.Transparent
                         )
                     )
@@ -242,16 +217,8 @@ fun StyledNumberPicker(
                     brush = Brush.verticalGradient(
                         colors = listOf(
                             Color.Transparent,
-                            FaintLight1.copy(
-                                if (pickerVisibility - FaintLight1.alpha >= 0)
-                                    pickerVisibility - FaintLight1.alpha
-                                else 0f
-                            ),
-                            FaintLight.copy(
-                                if (pickerVisibility - FaintLight.alpha >= 0)
-                                    pickerVisibility - FaintLight.alpha
-                                else 0f
-                            ),
+                            FaintLight1,
+                            FaintLight,
                             Color.Transparent
                         ),
                     )
@@ -264,7 +231,7 @@ fun StyledNumberPicker(
             text = name,
             fontFamily = Orbitron,
             fontSize = 16.sp,
-            color = Black.copy(pickerVisibility),
+            color = Black,
             fontWeight = FontWeight.SemiBold
         )
     }

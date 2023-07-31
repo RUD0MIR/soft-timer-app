@@ -112,7 +112,7 @@ fun ActionsSection(modifier: Modifier = Modifier, timerService: TimerService) {
     ) {
         //restart button
         RestartButton(
-            size = 50.dp,
+            size = if (timerState == TimerState.Ringing) 90.dp else 50.dp,
         ) {
             ServiceHelper.triggerForegroundService(
                 context = context,
@@ -120,19 +120,21 @@ fun ActionsSection(modifier: Modifier = Modifier, timerService: TimerService) {
             )
         }
 
-        PlayPauseButton(
-            size = 90.dp,
-            timerState = timerState
-        ) {
-            ServiceHelper.triggerForegroundService(
-                context = context,
-                action = if (timerState == TimerState.Running) ACTION_SERVICE_STOP
-                else ACTION_SERVICE_START
-            )
-        }
+        if (timerState != TimerState.Ringing) {
+            PlayPauseButton(
+                size = 90.dp,
+                timerState = timerState
+            ) {
+                ServiceHelper.triggerForegroundService(
+                    context = context,
+                    action = if (timerState == TimerState.Running) ACTION_SERVICE_STOP
+                    else ACTION_SERVICE_START
+                )
+            }
 
-        ThemeButton(size = 50.dp) {
-            //TODO change theme
+            ThemeButton(size = 50.dp) {
+                //TODO change theme
+            }
         }
     }
 }
@@ -145,16 +147,17 @@ fun RestartButton(
     val interactionSource = remember { MutableInteractionSource() }
     val restartAnimation by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.anim_reset))
     var isPlaying by remember { mutableStateOf(false) }
-    var progress by remember{ mutableStateOf(1f) }
+    var progress by remember { mutableStateOf(1f) }
 
 
     LaunchedEffect(key1 = isPlaying) {
-        if(isPlaying) {
+        if (isPlaying) {
             var targetValue = 1f
 
-            animate(initialValue = progress,
+            animate(
+                initialValue = progress,
                 targetValue = targetValue,
-                animationSpec =  tween(
+                animationSpec = tween(
                     durationMillis = MID_ANIMATION_DURATION,
                     easing = LinearEasing
                 )
@@ -165,15 +168,16 @@ fun RestartButton(
 
             targetValue = 0.5f
 
-            animate(initialValue = 0f,
+            animate(
+                initialValue = 0f,
                 targetValue = targetValue,
-                animationSpec =  tween(
+                animationSpec = tween(
                     durationMillis = MID_ANIMATION_DURATION,
                     easing = LinearEasing
                 )
             ) { value, _ ->
                 progress = value
-                if(value == targetValue) isPlaying = false
+                if (value == targetValue) isPlaying = false
             }
         } else {
             progress = 0.5f
@@ -196,7 +200,7 @@ fun RestartButton(
 
         LottieAnimation(
             modifier = Modifier
-                .size(14.dp)
+                .size(size * 0.3f)
                 .offset(x = (-1).dp, y = (-0.3).dp),
             composition = restartAnimation,
             progress = { progress }
@@ -221,34 +225,34 @@ fun PlayPauseButton(
         mutableStateOf(0f)
     }
 
-    //if () {}
-
-    LaunchedEffect(key1 = isAnimPlaying, key2 =  timerState) {
-        if(timerState == TimerState.Running) {
+    LaunchedEffect(key1 = isAnimPlaying, key2 = timerState) {
+        if (timerState == TimerState.Running) {
             //from pause icon to play icon animation
             val targetValue = 1f
-            animate(initialValue = progress,
+            animate(
+                initialValue = progress,
                 targetValue = targetValue,
-                animationSpec =  tween(
+                animationSpec = tween(
                     durationMillis = SHORT_ANIMATION_DURATION,
                     easing = LinearEasing
                 )
             ) { value, _ ->
                 progress = value
-                if(value == targetValue) isAnimPlaying = false
+                if (value == targetValue) isAnimPlaying = false
             }
-        } else if(timerState == TimerState.Idle || timerState == TimerState.Paused) {
+        } else if (timerState == TimerState.Idle || timerState == TimerState.Paused) {
             //from play icon to pause icon animation
             val targetValue = 0f
-            animate(initialValue = progress,
+            animate(
+                initialValue = progress,
                 targetValue = targetValue,
-                animationSpec =  tween(
+                animationSpec = tween(
                     durationMillis = SHORT_ANIMATION_DURATION,
                     easing = LinearEasing
                 )
             ) { value, _ ->
                 progress = value
-                if(value == targetValue) isAnimPlaying = false
+                if (value == targetValue) isAnimPlaying = false
             }
         }
     }
@@ -256,7 +260,7 @@ fun PlayPauseButton(
     Box(
         modifier = Modifier
             .clickable(interactionSource = interactionSource, indication = null) {
-                if(!isAnimPlaying && timerState != TimerState.Started && timerState != TimerState.Reset) {
+                if (!isAnimPlaying && timerState != TimerState.Started && timerState != TimerState.Reset) {
                     isAnimPlaying = true
                     onClick()
                 }
@@ -277,6 +281,7 @@ fun PlayPauseButton(
             progress = { progress }
         )
     }
+
 }
 
 
@@ -299,34 +304,36 @@ fun ThemeButton(
     }
 
     LaunchedEffect(key1 = isAnimPlaying) {
-        if(isAnimPlaying) {
+        if (isAnimPlaying) {
             if (isLightTheme) {
                 val targetValue = 1f
                 progress = 0.5f
 
-                animate(initialValue = progress,
+                animate(
+                    initialValue = progress,
                     targetValue = 1f,
-                    animationSpec =  tween(
+                    animationSpec = tween(
                         durationMillis = MID_ANIMATION_DURATION,
                         easing = LinearEasing
                     )
                 ) { value, _ ->
                     progress = value
-                    if(value == targetValue) isAnimPlaying = false
+                    if (value == targetValue) isAnimPlaying = false
                 }
             } else {
                 val targetValue = 0.5f
                 progress = 0f
 
-                animate(initialValue = progress,
+                animate(
+                    initialValue = progress,
                     targetValue = targetValue,
-                    animationSpec =  tween(
+                    animationSpec = tween(
                         durationMillis = MID_ANIMATION_DURATION,
                         easing = LinearEasing
                     )
                 ) { value, _ ->
                     progress = value
-                    if(value == targetValue) isAnimPlaying = false
+                    if (value == targetValue) isAnimPlaying = false
                 }
             }
         }
@@ -335,7 +342,7 @@ fun ThemeButton(
     Box(
         modifier = Modifier
             .clickable(interactionSource = interactionSource, indication = null) {
-                if(!isAnimPlaying) {
+                if (!isAnimPlaying) {
                     onClick()
                     isAnimPlaying = true
                     isLightTheme = !isLightTheme

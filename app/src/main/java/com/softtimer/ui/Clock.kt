@@ -3,6 +3,8 @@ package com.softtimer.ui
 import android.util.Log
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animate
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.animateSizeAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
@@ -16,6 +18,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -52,150 +55,114 @@ import kotlinx.coroutines.launch
 import kotlin.math.abs
 import kotlin.math.sin
 
-private var sizeModifier by mutableStateOf(1.1f)
-private var progressBarSweepAngle by mutableStateOf(0f)
 
 @Composable
 fun Clock(
     modifier: Modifier = Modifier,
     timerService: TimerService,
 ) {
-    val scope = rememberCoroutineScope()
-    val durationInMillis = timerService.duration.inWholeMilliseconds.toInt()
+    var sweepAngleTargetValue by remember {
+        mutableStateOf(0f)
+    }
 
-    LaunchedEffect(timerService.timerState) {
-        when (timerService.timerState) {
-            TimerState.Started -> {
-                Log.d("TAG", "started")
-                scope.launch {
-                    //progress bar starting animation
-                    animate(
-                        initialValue = 0f,
-                        targetValue = 360f,
-                        animationSpec = tween(
-                            durationMillis = MID_ANIMATION_DURATION,
-                            easing = LinearEasing
-                        )
-                    )
-                    { value, _ ->
-                        progressBarSweepAngle = value
-                    }
-                }
-                //clock zoom animation
-                scope.launch {
-                    Log.d("TAG", "clock zoom animation")
-                    animate(
-                        initialValue = sizeModifier,
-                        targetValue = 1.4f,
-                        animationSpec = tween(
-                            durationMillis = MID_ANIMATION_DURATION,
-                            easing = LinearEasing
-                        )
-                    )
-                    { value, _ ->
-                        sizeModifier = value
-                    }
-                }
+    var animDurationValue by remember {
+        mutableStateOf(MID_ANIMATION_DURATION)
+    }
+    val sweepAngle by animateFloatAsState(
+        targetValue = sweepAngleTargetValue,
+        animationSpec = tween(
+            durationMillis = animDurationValue,
+            easing = LinearEasing
+        )
+    )
 
-            }
+    var sizeModifierValue by remember { mutableStateOf(1.1f) }
+    val sizeModifier = animateFloatAsState(
+        targetValue = sizeModifierValue,
+        animationSpec = tween(
+            durationMillis = MID_ANIMATION_DURATION,
+            easing = LinearEasing
+        )
+    )
 
-            TimerState.Running -> {
-                Log.d("TAG", "running")
-                //progress bar running animation
-                animate(
-                    initialValue = progressBarSweepAngle,
-                    targetValue = 0f,
-                    animationSpec = tween(durationMillis = durationInMillis, easing = LinearEasing)
-                )
-                { value, _ ->
-                    progressBarSweepAngle = value
-                }
-            }
+    when (timerService.timerState) {
+        TimerState.Started -> {
+            sweepAngleTargetValue = 360f
 
-            TimerState.Reset -> {
-                scope.launch {
-                    //progress bar reset animation
-                    animate(
-                        initialValue = progressBarSweepAngle,
-                        targetValue = 0f,
-                        animationSpec = tween(
-                            durationMillis = MID_ANIMATION_DURATION,
-                            easing = LinearEasing
-                        )
-                    )
-                    { value, _ ->
-                        progressBarSweepAngle = value
-                    }
-                }
-                scope.launch {
-                    animate(
-                        initialValue = sizeModifier,
-                        targetValue = 1.1f,
-                        animationSpec = tween(
-                            durationMillis = MID_ANIMATION_DURATION,
-                            easing = LinearEasing
-                        )
-                    )
-                    { value, _ ->
-                        sizeModifier = value
-                    }
-                }
-            }
-
-            else -> {}
+            sizeModifierValue = 1.4f
         }
+
+        TimerState.Running -> {
+            sweepAngleTargetValue = 0f
+            animDurationValue = timerService.duration.inWholeMilliseconds.toInt()
+        }
+
+        TimerState.Reset -> {
+            sweepAngleTargetValue = 0.01f
+            animDurationValue = MID_ANIMATION_DURATION
+
+            sizeModifierValue = 1.1f
+        }
+
+        TimerState.Paused -> {
+            sweepAngleTargetValue = sweepAngle
+        }
+
+        else -> {}
     }
 
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(260.dp * sizeModifier),
+            .height(260.dp * sizeModifier.value),
         contentAlignment = Alignment.Center
     ) {
 
         Image(
             modifier = Modifier
-                .size(284.dp * sizeModifier)
-                .offset(y = 5.dp * sizeModifier),
+                .size(284.dp * sizeModifier.value)
+                .offset(y = 5.dp * sizeModifier.value),
             painter = painterResource(id = R.drawable.bottom_circle),
             contentScale = ContentScale.Crop,
             contentDescription = null
         )
 
         ProgressBar(
-            sweepAngle = progressBarSweepAngle,
-            diameter = 210f * sizeModifier//210
+            sweepAngle = sweepAngle,
+            diameter = 210f * sizeModifier.value,//210
+            sizeModifier = sizeModifier.value
         )
 
         Image(
             modifier = Modifier
-                .size(200.dp * sizeModifier)
-                .offset(x = 5.dp * sizeModifier, y = 12.dp * sizeModifier),
+                .size(200.dp * sizeModifier.value)
+                .offset(x = 5.dp * sizeModifier.value, y = 12.dp * sizeModifier.value),
             painter = painterResource(id = R.drawable.mid_circle_group),
             contentScale = ContentScale.Crop,
             contentDescription = null
         )
 
         Indicator(
-            modifier = Modifier.offset(y = (-76f * sizeModifier).dp),
-            sweepAngle = progressBarSweepAngle
+            modifier = Modifier.offset(y = (-76f * sizeModifier.value).dp),
+            sweepAngle = sweepAngle,
+            sizeModifier = sizeModifier.value
         )
 
         Image(
             modifier = Modifier
-                .size(160.dp * sizeModifier)
-                .offset(x = 10.dp * sizeModifier, y = 10.dp * sizeModifier),
+                .size(160.dp * sizeModifier.value)
+                .offset(x = 10.dp * sizeModifier.value, y = 10.dp * sizeModifier.value),
             painter = painterResource(id = R.drawable.top_circle),
             contentScale = ContentScale.Crop,
             contentDescription = null
         )
 
-        TimerNumbers(timerService = timerService)
+        TimerNumbers(timerService = timerService, sizeModifier = sizeModifier.value)
     }
 }
 
 @Composable
-fun TimerNumbers(timerService: TimerService) {
+fun TimerNumbers(timerService: TimerService, sizeModifier: Float) {
     val isHourVisible = timerService.hState != 0
     val hours = timerService.getH()
     val minutes = timerService.getMin()
@@ -262,7 +229,7 @@ fun TimerNumbers(timerService: TimerService) {
 }
 
 @Composable
-fun ProgressBar(sweepAngle: Float, diameter: Float) {
+fun ProgressBar(sweepAngle: Float, diameter: Float, sizeModifier: Float) {
     Canvas(
         modifier = Modifier
             .size(diameter.dp)
@@ -359,7 +326,7 @@ fun ProgressBar(sweepAngle: Float, diameter: Float) {
 }
 
 @Composable
-fun Indicator(modifier: Modifier = Modifier, sweepAngle: Float) {
+fun Indicator(modifier: Modifier = Modifier, sweepAngle: Float, sizeModifier: Float) {
     var shadowPosition by remember {
         mutableStateOf(0f)
     }

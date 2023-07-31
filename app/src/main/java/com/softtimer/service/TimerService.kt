@@ -4,6 +4,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
 import android.content.Intent
+import android.media.Ringtone
 import android.media.RingtoneManager
 import android.os.Binder
 import android.os.Build
@@ -77,6 +78,8 @@ class TimerService : Service() {
         return abs(sState).pad()
     }
 
+    private val alarmSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+    lateinit var ringtone: Ringtone
 //    val isClockAnimationsRunning by mutableStateOf(false)
 
     override fun onBind(p0: Intent?) = binder
@@ -128,6 +131,11 @@ class TimerService : Service() {
     }
 
     private fun startTimer(onTick: (h: String, m: String, s: String) -> Unit) {
+        ringtone = RingtoneManager.getRingtone(applicationContext, alarmSoundUri)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            ringtone.isLooping = true
+        }
+
         duration = getDurationInSec(
             h = hState,
             min = minState,
@@ -136,31 +144,36 @@ class TimerService : Service() {
 
         val isTimeSet = duration != ZERO
 
-        Log.d(TAG, "isTimer set: $isTimeSet")
         if (isTimeSet) {
             serviceScope.launch {
-                Log.d(TAG, "idle?: ${timerState == TimerState.Idle}")
                 if (timerState == TimerState.Idle) {
                     timerState = TimerState.Started
                     Log.d(TAG, "started!")
                     delay(MID_ANIMATION_DELAY)
                 }
+
                 this@TimerService.timerState = TimerState.Running
-                Log.d(TAG, "running!")
+
                 timer = fixedRateTimer(initialDelay = 1000L, period = 1000L) {//1000 1000
                     duration = duration.minus(1.seconds)
                     updateTimeUnits()
+                    onTick(getH(), getMin(), getS())
 
-                    Log.d(TAG, "time expired ${duration.inWholeSeconds < 0}")
-                    if (duration.inWholeSeconds < 0 && timerState == TimerState.Running) {
-                        onTimerExpired()
+                    if (duration.inWholeSeconds < 0 && timerState == TimerState.Running) onTimerExpired()
+
+                    if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
+                        if(timerState == TimerState.Ringing && !ringtone.isPlaying) ringtone.play()
                     }
 
-                    onTick(getH(), getMin(), getS())
                 }
             }
         }
 
+    }
+
+    private fun onTimerExpired() {
+        this@TimerService.timerState = TimerState.Ringing
+        ringtone.play()
     }
 
     private fun stopTimer() {
@@ -180,6 +193,7 @@ class TimerService : Service() {
 
             duration = Duration.ZERO
             updateTimeUnits()
+            ringtone.stop()
 
             //serviceScope.cancel()
         }
@@ -259,21 +273,11 @@ class TimerService : Service() {
         fun getService(): TimerService = this@TimerService
     }
 
-    private fun onTimerExpired() {
-        this@TimerService.timerState = TimerState.Ringing
-        playDefaultAlarmSound()
-    }
-
     private fun playDefaultAlarmSound() {
         // Get the default alarm sound URI
-        val alarmSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
 
-        // Create Ringtone instance
-        val ringtone = RingtoneManager.getRingtone(applicationContext, alarmSoundUri)
 
-        // Play the default alarm sound
-        ringtone.play()
-        // Note: Don't forget to stop the Ringtone when no longer needed
+                // Note: Don't forget to stop the Ringtone when no longer needed
         // ringtone.stop()
     }
 }

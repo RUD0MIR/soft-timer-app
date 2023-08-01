@@ -27,6 +27,7 @@ import com.softtimer.util.pad
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.*
@@ -57,8 +58,11 @@ class TimerService : Service() {
     var timerState by mutableStateOf(TimerState.Idle)
         private set
 
+    var showOvertime by mutableStateOf(false)
+    private set
+
     var hState by mutableStateOf(0)
-    var minState by mutableStateOf(0)//always zero
+    var minState by mutableStateOf(0)
     var sState by mutableStateOf(0)
     var millisState by mutableStateOf(0)
 
@@ -78,6 +82,10 @@ class TimerService : Service() {
         return abs(sState).pad()
     }
 
+    fun getMillis(): String {
+        return String.format("%02d", millisState / 10000000)
+    }
+
     private val alarmSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
     lateinit var ringtone: Ringtone
 //    val isClockAnimationsRunning by mutableStateOf(false)
@@ -89,8 +97,13 @@ class TimerService : Service() {
             TimerState.Started.name -> {
                 setStopButton()
                 startForegroundService()
-                startTimer { hours, minutes, seconds ->
-                    updateNotification(hours = hours, minutes = minutes, seconds = seconds)
+                startTimer { hours, minutes, seconds, millis ->
+                    updateNotification(
+                        hours = hours,
+                        minutes = minutes,
+                        seconds = seconds,
+                        millis = millis
+                    )
                 }
             }
 
@@ -110,8 +123,13 @@ class TimerService : Service() {
                 ACTION_SERVICE_START -> {
                     setStopButton()
                     startForegroundService()
-                    startTimer { hours, minutes, seconds ->
-                        updateNotification(hours = hours, minutes = minutes, seconds = seconds)
+                    startTimer { hours, minutes, seconds, millis ->
+                        updateNotification(
+                            hours = hours,
+                            minutes = minutes,
+                            seconds = seconds,
+                            millis = millis
+                        )
                     }
                 }
 
@@ -130,7 +148,8 @@ class TimerService : Service() {
         return super.onStartCommand(intent, flags, startId)
     }
 
-    private fun startTimer(onTick: (h: String, m: String, s: String) -> Unit) {
+    private fun startTimer(onTick: (h: String, m: String, s: String, millis: String) -> Unit) {
+        showOvertime = false
         ringtone = RingtoneManager.getRingtone(applicationContext, alarmSoundUri)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             ringtone.isLooping = true
@@ -148,7 +167,6 @@ class TimerService : Service() {
             serviceScope.launch {
                 if (timerState == TimerState.Idle) {
                     timerState = TimerState.Started
-                    Log.d(TAG, "started!")
                     delay(MID_ANIMATION_DELAY)
                 }
 
@@ -157,14 +175,24 @@ class TimerService : Service() {
                 timer = fixedRateTimer(initialDelay = 1000L, period = 1000L) {//1000 1000
                     duration = duration.minus(1.seconds)
                     updateTimeUnits()
-                    onTick(getH(), getMin(), getS())
+                    onTick(getH(), getMin(), getS(), getMillis())
 
-                    if (duration.inWholeSeconds < 0 && timerState == TimerState.Running) onTimerExpired()
+                    if (duration.inWholeSeconds < 0 && timerState == TimerState.Running) {
+                        onTimerExpired()
+                        timer.cancel()
+                        duration = ZERO
 
-                    if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
-                        if(timerState == TimerState.Ringing && !ringtone.isPlaying) ringtone.play()
+                        timer = fixedRateTimer(initialDelay = 1L, period = 1L) {
+                            duration = duration.plus(1.milliseconds)
+                            updateTimeUnits()
+                            onTick(getH(), getMin(), getS(), getMillis())
+                            Log.d(TAG, "${duration.inWholeMilliseconds}")
+                        }
                     }
 
+//                    if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
+//                        if(timerState == TimerState.Ringing && !ringtone.isPlaying) ringtone.play()
+//                    }
                 }
             }
         }
@@ -174,6 +202,7 @@ class TimerService : Service() {
     private fun onTimerExpired() {
         this@TimerService.timerState = TimerState.Ringing
         ringtone.play()
+        showOvertime = true
     }
 
     private fun stopTimer() {
@@ -195,16 +224,17 @@ class TimerService : Service() {
             updateTimeUnits()
             ringtone.stop()
 
-            //serviceScope.cancel()
+            serviceScope.cancel()
         }
 
     }
 
     private fun updateTimeUnits() {
-        duration.toComponents { hours, minutes, seconds, _ ->
+        duration.toComponents { hours, minutes, seconds, milliseconds ->
             this@TimerService.hState = hours.toInt()
             this@TimerService.minState = minutes
             this@TimerService.sState = seconds
+            this@TimerService.millisState = milliseconds
         }
     }
 
@@ -230,14 +260,16 @@ class TimerService : Service() {
         }
     }
 
-    private fun updateNotification(hours: String, minutes: String, seconds: String) {
+    private fun updateNotification(hours: String, minutes: String, seconds: String, millis: String) {
         notificationManager.notify(
             NOTIFICATION_ID,
             notificationBuilder.setContentText(
                 formatTime(
+                    isTimeExpired = timerState == TimerState.Ringing,
                     hours = hours,
                     minutes = minutes,
                     seconds = seconds,
+                    millis = millis
                 )
             ).build()
         )

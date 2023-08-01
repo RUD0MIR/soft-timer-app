@@ -34,6 +34,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -167,6 +168,7 @@ fun TimerNumbers(timerService: TimerService, sizeModifier: Float) {
     val hours = timerService.getH()
     val minutes = timerService.getMin()
     val seconds = timerService.getS()
+    val millis = timerService.getMillis()
 
     Box(
         modifier = Modifier
@@ -209,21 +211,14 @@ fun TimerNumbers(timerService: TimerService, sizeModifier: Float) {
             fontSize = if (isHourVisible) (16f * sizeModifier).sp else (20f * sizeModifier).sp//16//20
         )
 
-        if (timerService.timerState == TimerState.Ringing) {
-            Text(
-                modifier = Modifier.align(Alignment.BottomCenter),
-                text = buildString {
-                    append("-")
-                    append(minutes)
-                    append(":")
-                    append(seconds)
-                    append(":")
-                    append("00")
-                },
-                fontFamily = Orbitron,
-                color = Blue,
-                fontSize = (10f * sizeModifier).sp
-            )
+        if (timerService.showOvertime) {
+                Text(
+                    modifier = Modifier.align(Alignment.BottomStart).offset(x = 23.dp),
+                    text = "-$minutes:$seconds.$millis",
+                    fontFamily = Orbitron,
+                    color = Blue,
+                    fontSize = (10f * sizeModifier).sp
+                )
         }
     }
 }

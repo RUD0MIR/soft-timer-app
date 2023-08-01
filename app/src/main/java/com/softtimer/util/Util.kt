@@ -24,8 +24,14 @@ fun Offset.Companion.offsetFromCenter(x: Float = 0f, y: Float = 0f, center: Offs
     return Offset(center.x + x, center.y + y)
 }
 
-fun formatTime(seconds: String, minutes: String, hours: String): String {
-    return "$hours:$minutes:$seconds"
+fun formatTime(
+    isTimeExpired: Boolean = false,
+    seconds: String,
+    minutes: String,
+    hours: String,
+    millis: String
+): String {
+    return if(isTimeExpired) "-$minutes:$seconds:$millis" else "$hours:$minutes.$seconds"
 }
 
 fun Int.pad(length: Int = 2, padChar: Char = '0'): String {

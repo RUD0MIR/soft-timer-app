@@ -28,6 +28,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.*
@@ -53,22 +54,38 @@ class TimerService : Service() {
 
     private lateinit var timer: Timer
 
-    val serviceScope = CoroutineScope(Dispatchers.Default)
+    var progressBarsweepAngle by mutableStateOf(0f)
 
     var timerState by mutableStateOf(TimerState.Idle)
         private set
+    var duration: Duration = ZERO
+        private set
 
     var showOvertime by mutableStateOf(false)
-    private set
+        private set
+
+    var overtimeDuration: Duration = ZERO
+        private set
+
+    var overtimeMins by mutableStateOf(0)
+    var overtimeSecs by mutableStateOf(0)
+    var overtimeMilis by mutableStateOf(0)
+
+    fun getOvertimeMins(): String {
+        return abs(overtimeMins).pad()
+    }
+
+    fun getOvertimeSecs(): String {
+        return abs(overtimeSecs).pad()
+    }
+
+    fun getOvertimeMillis(): String {
+        return String.format("%02d", overtimeMilis / 10000000)
+    }
 
     var hState by mutableStateOf(0)
     var minState by mutableStateOf(0)
     var sState by mutableStateOf(0)
-    var millisState by mutableStateOf(0)
-
-    var duration: Duration = ZERO
-        private set
-
 
     fun getH(): String {
         return abs(hState).pad()
@@ -82,9 +99,6 @@ class TimerService : Service() {
         return abs(sState).pad()
     }
 
-    fun getMillis(): String {
-        return String.format("%02d", millisState / 10000000)
-    }
 
     private val alarmSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
     lateinit var ringtone: Ringtone
@@ -94,7 +108,7 @@ class TimerService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.getStringExtra(STOPWATCH_STATE)) {
-            TimerState.Started.name -> {
+            TimerState.Running.name -> {
                 setStopButton()
                 startForegroundService()
                 startTimer { hours, minutes, seconds, millis ->
@@ -150,6 +164,8 @@ class TimerService : Service() {
 
     private fun startTimer(onTick: (h: String, m: String, s: String, millis: String) -> Unit) {
         showOvertime = false
+        overtimeDuration = ZERO
+
         ringtone = RingtoneManager.getRingtone(applicationContext, alarmSoundUri)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             ringtone.isLooping = true
@@ -161,42 +177,36 @@ class TimerService : Service() {
             s = sState
         )
 
-        val isTimeSet = duration != ZERO
+        if (duration != ZERO) {
+            this@TimerService.timerState = TimerState.Running
 
-        if (isTimeSet) {
-            serviceScope.launch {
-                if (timerState == TimerState.Idle) {
-                    timerState = TimerState.Started
-                    delay(MID_ANIMATION_DELAY)
-                }
+            timer = fixedRateTimer(initialDelay = 1000L, period = 1000L) {//1000 1000
+                duration = duration.minus(1.seconds)
+                updateTimeUnits()
+                onTick(getH(), getMin(), getS(), getOvertimeMillis())
 
-                this@TimerService.timerState = TimerState.Running
+                if (duration.inWholeSeconds < 0 && timerState == TimerState.Running) {
+                    onTimerExpired()
+                    timer.cancel()
+                    duration = ZERO
 
-                timer = fixedRateTimer(initialDelay = 1000L, period = 1000L) {//1000 1000
-                    duration = duration.minus(1.seconds)
-                    updateTimeUnits()
-                    onTick(getH(), getMin(), getS(), getMillis())
-
-                    if (duration.inWholeSeconds < 0 && timerState == TimerState.Running) {
-                        onTimerExpired()
-                        timer.cancel()
-                        duration = ZERO
-
-                        timer = fixedRateTimer(initialDelay = 1L, period = 1L) {
-                            duration = duration.plus(1.milliseconds)
-                            updateTimeUnits()
-                            onTick(getH(), getMin(), getS(), getMillis())
-                            Log.d(TAG, "${duration.inWholeMilliseconds}")
-                        }
+                    timer = fixedRateTimer(initialDelay = 1L, period = 1L) {
+                        duration = duration.plus(1.milliseconds)
+                        updateTimeUnits(isTimeExpired = true)
+                        onTick(
+                            getH(),
+                            getOvertimeMins(),
+                            getOvertimeSecs(),
+                            getOvertimeMillis()
+                        )
                     }
+                }
 
 //                    if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
 //                        if(timerState == TimerState.Ringing && !ringtone.isPlaying) ringtone.play()
 //                    }
-                }
             }
         }
-
     }
 
     private fun onTimerExpired() {
@@ -213,28 +223,25 @@ class TimerService : Service() {
     }
 
     private fun resetTimer() {
-        serviceScope.launch {
-            this@TimerService.timerState = TimerState.Reset
-
-            delay(MID_ANIMATION_DELAY)
-
-            this@TimerService.timerState = TimerState.Idle
-
             duration = Duration.ZERO
             updateTimeUnits()
             ringtone.stop()
-
-            serviceScope.cancel()
-        }
-
+            this@TimerService.timerState = TimerState.Idle
     }
 
-    private fun updateTimeUnits() {
-        duration.toComponents { hours, minutes, seconds, milliseconds ->
-            this@TimerService.hState = hours.toInt()
-            this@TimerService.minState = minutes
-            this@TimerService.sState = seconds
-            this@TimerService.millisState = milliseconds
+    private fun updateTimeUnits(isTimeExpired: Boolean = false) {
+        if (isTimeExpired) {
+            duration.toComponents { _, minutes, seconds, milliseconds ->
+                this@TimerService.overtimeMins = minutes
+                this@TimerService.overtimeSecs = seconds
+                this@TimerService.overtimeMilis = milliseconds
+            }
+        } else {
+            duration.toComponents { hours, minutes, seconds, _ ->
+                this@TimerService.hState = hours.toInt()
+                this@TimerService.minState = minutes
+                this@TimerService.sState = seconds
+            }
         }
     }
 
@@ -260,7 +267,12 @@ class TimerService : Service() {
         }
     }
 
-    private fun updateNotification(hours: String, minutes: String, seconds: String, millis: String) {
+    private fun updateNotification(
+        hours: String,
+        minutes: String,
+        seconds: String,
+        millis: String
+    ) {
         notificationManager.notify(
             NOTIFICATION_ID,
             notificationBuilder.setContentText(
@@ -309,7 +321,7 @@ class TimerService : Service() {
         // Get the default alarm sound URI
 
 
-                // Note: Don't forget to stop the Ringtone when no longer needed
+        // Note: Don't forget to stop the Ringtone when no longer needed
         // ringtone.stop()
     }
 }
@@ -317,7 +329,6 @@ class TimerService : Service() {
 
 enum class TimerState {
     Idle,
-    Started,
     Running,
     Paused,
     Reset,

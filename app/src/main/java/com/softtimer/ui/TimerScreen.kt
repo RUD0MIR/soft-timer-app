@@ -260,7 +260,7 @@ fun PlayPauseButton(
     Box(
         modifier = Modifier
             .clickable(interactionSource = interactionSource, indication = null) {
-                if (!isAnimPlaying && timerState != TimerState.Started && timerState != TimerState.Reset) {
+                if (!isAnimPlaying && timerState != TimerState.Reset) {
                     isAnimPlaying = true
                     onClick()
                 }

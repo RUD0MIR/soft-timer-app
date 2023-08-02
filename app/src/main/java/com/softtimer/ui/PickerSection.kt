@@ -47,13 +47,15 @@ import com.softtimer.ui.theme.Black
 import com.softtimer.ui.theme.FaintLight
 import com.softtimer.ui.theme.FaintLight1
 import com.softtimer.ui.theme.FaintShadow
+import com.softtimer.ui.theme.MID_ANIMATION_DELAY
 import com.softtimer.ui.theme.MID_ANIMATION_DURATION
 import com.softtimer.ui.theme.Orbitron
 import com.softtimer.ui.theme.SoftTImerTheme
 import com.softtimer.util.getNumbersWithPad
+import kotlinx.coroutines.delay
 
 @Composable
-fun PickerSection(modifier: Modifier = Modifier,timerService: TimerService) {
+fun PickerSection(modifier: Modifier = Modifier, timerService: TimerService) {
     val timerState = timerService.timerState
 
     var pickerVisibilityValue by remember {
@@ -71,14 +73,21 @@ fun PickerSection(modifier: Modifier = Modifier,timerService: TimerService) {
         mutableStateOf(true)
     }
 
-    when(timerState) {
-        TimerState.Started -> pickerVisibilityValue = 0f
-        TimerState.Running -> isVisible = false
-        TimerState.Reset ->  {
-            pickerVisibilityValue = 1f
-            isVisible = true
+    LaunchedEffect(key1 = timerState) {
+        when (timerState) {
+            TimerState.Running -> {
+                pickerVisibilityValue = 0f
+                delay(MID_ANIMATION_DELAY)
+                isVisible = false
+            }
+
+            TimerState.Idle -> {
+                isVisible = true
+                pickerVisibilityValue = 1f
+            }
+
+            else -> {}
         }
-        else -> {}
     }
 
     if (isVisible) {
@@ -114,9 +123,9 @@ fun PickerSection(modifier: Modifier = Modifier,timerService: TimerService) {
                 }
 
                 StyledNumberPicker(
-                modifier = Modifier
-                    .offset(x = (-14).dp)
-                    .alpha(pickerVisibility),
+                    modifier = Modifier
+                        .offset(x = (-14).dp)
+                        .alpha(pickerVisibility),
                     values = getNumbersWithPad(1..59),
                     name = "s"
                 ) { selectedItem ->
@@ -148,7 +157,7 @@ fun StyledNumberPicker(
             contentScale = ContentScale.FillBounds
         )
 
-        if(showDivider) {
+        if (showDivider) {
             //colon divider
             Text(
                 modifier = Modifier
@@ -249,7 +258,7 @@ fun TestPreview() {
                 .background(Color(0xFFDAD8D8)),
             contentAlignment = Alignment.Center
         ) {
-           PickerSection(timerService = TimerService())
+            PickerSection(timerService = TimerService())
         }
     }
 }

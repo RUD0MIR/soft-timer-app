@@ -35,7 +35,9 @@ import com.softtimer.ui.theme.SoftTImerTheme
 import com.softtimer.util.getNumbersWithPad
 import com.softtimer.util.pad
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 
+private const val TAG = "MainActivity"
 
 class MainActivity : ComponentActivity() {
     private var isBound by mutableStateOf(false)
@@ -48,6 +50,7 @@ class MainActivity : ComponentActivity() {
         }
 
         override fun onServiceDisconnected(arg0: ComponentName) {
+            Log.d(TAG, "onServiceDisconnected: ")
             isBound = false
         }
     }
@@ -65,9 +68,6 @@ class MainActivity : ComponentActivity() {
             SoftTImerTheme {
                 if (isBound) {
                     TimerScreen(timerService = timerService)
-
-//                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-//
 //                    }
                 }
             }
@@ -86,10 +86,11 @@ class MainActivity : ComponentActivity() {
         requestPermissionLauncher.launch(permissions.asList().toTypedArray())
     }
 
-    override fun onStop() {
-        super.onStop()
+    override fun onDestroy() {
+        super.onDestroy()
+
+        Log.d("MainActivity", "onDestroy: ")
         unbindService(connection)
         isBound = false
-        timerService.serviceScope.cancel()
     }
 }

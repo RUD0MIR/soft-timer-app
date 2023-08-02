@@ -1,10 +1,7 @@
 package com.softtimer.ui
 
-import android.util.Log
 import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.animateSizeAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
@@ -18,11 +15,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -34,7 +31,6 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -49,11 +45,13 @@ import com.softtimer.ui.theme.FaintShadow
 import com.softtimer.ui.theme.Orbitron
 import com.softtimer.ui.theme.SoftTImerTheme
 import com.softtimer.ui.theme.LightBlue
+import com.softtimer.ui.theme.MID_ANIMATION_DELAY
 import com.softtimer.ui.theme.MID_ANIMATION_DURATION
 import com.softtimer.ui.theme.MidBlue
 import com.softtimer.util.arcShadow
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlin.math.abs
+import kotlinx.coroutines.runBlocking
 import kotlin.math.sin
 
 
@@ -62,15 +60,14 @@ fun Clock(
     modifier: Modifier = Modifier,
     timerService: TimerService,
 ) {
-    var sweepAngleTargetValue by remember {
-        mutableStateOf(0f)
+    var initialStart by remember {
+        mutableStateOf(true)
     }
-
-    var animDurationValue by remember {
+    var animDurationValue by rememberSaveable {
         mutableStateOf(MID_ANIMATION_DURATION)
     }
     val sweepAngle by animateFloatAsState(
-        targetValue = sweepAngleTargetValue,
+        targetValue = timerService.progressBarsweepAngle,
         animationSpec = tween(
             durationMillis = animDurationValue,
             easing = LinearEasing
@@ -86,30 +83,33 @@ fun Clock(
         )
     )
 
-    when (timerService.timerState) {
-        TimerState.Started -> {
-            sweepAngleTargetValue = 360f
+    LaunchedEffect(key1 = timerService.timerState) {
+        when (timerService.timerState) {
+            TimerState.Idle -> {
+                timerService.progressBarsweepAngle = 0.01f
+                animDurationValue = MID_ANIMATION_DURATION
 
-            sizeModifierValue = 1.4f
+                sizeModifierValue = 1.1f
+
+                initialStart = true
+            }
+            TimerState.Running -> {
+                if(initialStart) {
+                    timerService.progressBarsweepAngle = 360f
+                    sizeModifierValue = 1.4f
+
+                    delay(MID_ANIMATION_DELAY)
+                }
+
+                timerService.progressBarsweepAngle = 0f
+                animDurationValue = timerService.duration.inWholeMilliseconds.toInt()
+            }
+            TimerState.Paused -> {
+                timerService.progressBarsweepAngle = sweepAngle
+                initialStart = false
+            }
+            else -> {}
         }
-
-        TimerState.Running -> {
-            sweepAngleTargetValue = 0f
-            animDurationValue = timerService.duration.inWholeMilliseconds.toInt()
-        }
-
-        TimerState.Reset -> {
-            sweepAngleTargetValue = 0.01f
-            animDurationValue = MID_ANIMATION_DURATION
-
-            sizeModifierValue = 1.1f
-        }
-
-        TimerState.Paused -> {
-            sweepAngleTargetValue = sweepAngle
-        }
-
-        else -> {}
     }
 
     Box(
@@ -168,7 +168,11 @@ fun TimerNumbers(timerService: TimerService, sizeModifier: Float) {
     val hours = timerService.getH()
     val minutes = timerService.getMin()
     val seconds = timerService.getS()
-    val millis = timerService.getMillis()
+
+    val overtimeMins = timerService.getOvertimeMins()
+    val overtimeSecs = timerService.getOvertimeSecs()
+    val overtimeMillis = timerService.getOvertimeMillis()
+
 
     Box(
         modifier = Modifier
@@ -212,13 +216,15 @@ fun TimerNumbers(timerService: TimerService, sizeModifier: Float) {
         )
 
         if (timerService.showOvertime) {
-                Text(
-                    modifier = Modifier.align(Alignment.BottomStart).offset(x = 23.dp),
-                    text = "-$minutes:$seconds.$millis",
-                    fontFamily = Orbitron,
-                    color = Blue,
-                    fontSize = (10f * sizeModifier).sp
-                )
+            Text(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .offset(x = 23.dp),
+                text = "-$overtimeMins:$overtimeSecs.$overtimeMillis",
+                fontFamily = Orbitron,
+                color = Blue,
+                fontSize = (10f * sizeModifier).sp
+            )
         }
     }
 }

@@ -22,7 +22,7 @@ object ServiceHelper {
 
     fun clickPendingIntent(context: Context): PendingIntent {
         val clickIntent = Intent(context, MainActivity::class.java).apply {
-            putExtra(STOPWATCH_STATE, TimerState.Started.name)
+            putExtra(STOPWATCH_STATE, TimerState.Running.name)//Started
         }
         return PendingIntent.getActivity(
             context, CLICK_REQUEST_CODE, clickIntent, flag
@@ -40,7 +40,7 @@ object ServiceHelper {
 
     fun resumePendingIntent(context: Context): PendingIntent {
         val resumeIntent = Intent(context, TimerService::class.java).apply {
-            putExtra(STOPWATCH_STATE, TimerState.Started.name)
+            putExtra(STOPWATCH_STATE, TimerState.Running.name)//Started
         }
         return PendingIntent.getService(
             context, RESUME_REQUEST_CODE, resumeIntent, flag

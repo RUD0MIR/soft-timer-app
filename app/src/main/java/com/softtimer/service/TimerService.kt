@@ -102,11 +102,20 @@ class TimerService : Service() {
 
     private val alarmSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
     lateinit var ringtone: Ringtone
-//    val isClockAnimationsRunning by mutableStateOf(false)
 
+    override fun onCreate() {
+        super.onCreate()
+        ringtone = RingtoneManager.getRingtone(applicationContext, alarmSoundUri)
+    }
     override fun onBind(p0: Intent?) = binder
 
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        super.onTaskRemoved(rootIntent)
+        Log.d(TAG, "onTaskRemoved: ")
+        stopForegroundService()
+    }
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        Log.d(TAG, "onStartCommand:")
         when (intent?.getStringExtra(STOPWATCH_STATE)) {
             TimerState.Running.name -> {
                 setStopButton()
@@ -166,7 +175,6 @@ class TimerService : Service() {
         showOvertime = false
         overtimeDuration = ZERO
 
-        ringtone = RingtoneManager.getRingtone(applicationContext, alarmSoundUri)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             ringtone.isLooping = true
         }
@@ -180,7 +188,7 @@ class TimerService : Service() {
         if (duration != ZERO) {
             this@TimerService.timerState = TimerState.Running
 
-            timer = fixedRateTimer(initialDelay = 1000L, period = 1000L) {//1000 1000
+            timer = fixedRateTimer(initialDelay = 1600L, period = 1000L) {//1000 1000
                 duration = duration.minus(1.seconds)
                 updateTimeUnits()
                 onTick(getH(), getMin(), getS(), getOvertimeMillis())
@@ -199,12 +207,12 @@ class TimerService : Service() {
                             getOvertimeSecs(),
                             getOvertimeMillis()
                         )
+
+                        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
+                            if (timerState == TimerState.Ringing && !ringtone.isPlaying) ringtone.play()
+                        }
                     }
                 }
-
-//                    if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
-//                        if(timerState == TimerState.Ringing && !ringtone.isPlaying) ringtone.play()
-//                    }
             }
         }
     }
@@ -253,6 +261,7 @@ class TimerService : Service() {
     private fun stopForegroundService() {
         notificationManager.cancel(NOTIFICATION_ID)
         stopForeground(STOP_FOREGROUND_REMOVE)
+        timer.cancel()
         stopSelf()
     }
 
@@ -316,16 +325,7 @@ class TimerService : Service() {
     inner class StopwatchBinder : Binder() {
         fun getService(): TimerService = this@TimerService
     }
-
-    private fun playDefaultAlarmSound() {
-        // Get the default alarm sound URI
-
-
-        // Note: Don't forget to stop the Ringtone when no longer needed
-        // ringtone.stop()
-    }
 }
-
 
 enum class TimerState {
     Idle,

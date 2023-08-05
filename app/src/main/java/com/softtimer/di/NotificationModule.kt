@@ -1,7 +1,10 @@
 package com.softtimer.di
 
+import android.app.Notification.FOREGROUND_SERVICE_DEFERRED
+import android.app.Notification.FOREGROUND_SERVICE_IMMEDIATE
 import android.app.NotificationManager
 import android.content.Context
+import android.graphics.Bitmap
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.core.app.NotificationCompat
 import com.softtimer.R

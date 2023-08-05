@@ -29,9 +29,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import com.softtimer.service.ServiceHelper
 import com.softtimer.service.TimerService
+import com.softtimer.service.TimerState
 import com.softtimer.ui.TimerScreen
 import com.softtimer.ui.theme.SoftTImerTheme
+import com.softtimer.util.Constants.ACTION_SERVICE_RESET
 import com.softtimer.util.getNumbersWithPad
 import com.softtimer.util.pad
 import kotlinx.coroutines.cancel
@@ -50,7 +53,6 @@ class MainActivity : ComponentActivity() {
         }
 
         override fun onServiceDisconnected(arg0: ComponentName) {
-            Log.d(TAG, "onServiceDisconnected: ")
             isBound = false
         }
     }
@@ -60,6 +62,8 @@ class MainActivity : ComponentActivity() {
         Intent(this, TimerService::class.java).also { intent ->
             bindService(intent, connection, Context.BIND_AUTO_CREATE)
         }
+
+
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -68,7 +72,6 @@ class MainActivity : ComponentActivity() {
             SoftTImerTheme {
                 if (isBound) {
                     TimerScreen(timerService = timerService)
-//                    }
                 }
             }
         }
@@ -86,11 +89,13 @@ class MainActivity : ComponentActivity() {
         requestPermissionLauncher.launch(permissions.asList().toTypedArray())
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-
-        Log.d("MainActivity", "onDestroy: ")
+    override fun onStop() {
+        super.onStop()
         unbindService(connection)
         isBound = false
+//        val serviceCloseIntent = Intent(applicationContext, TimerService::class.java)
+//        applicationContext.stopService(serviceCloseIntent)
     }
+
+
 }

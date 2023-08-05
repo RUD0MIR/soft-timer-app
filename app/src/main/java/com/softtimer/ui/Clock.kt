@@ -1,5 +1,6 @@
 package com.softtimer.ui
 
+import android.util.Log
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -42,18 +43,21 @@ import com.softtimer.ui.theme.Blue
 import com.softtimer.ui.theme.BlueFlash
 import com.softtimer.ui.theme.BlueLight
 import com.softtimer.ui.theme.FaintShadow
+import com.softtimer.ui.theme.FaintShadow1
 import com.softtimer.ui.theme.Orbitron
 import com.softtimer.ui.theme.SoftTImerTheme
 import com.softtimer.ui.theme.LightBlue
 import com.softtimer.ui.theme.MID_ANIMATION_DELAY
 import com.softtimer.ui.theme.MID_ANIMATION_DURATION
 import com.softtimer.ui.theme.MidBlue
+import com.softtimer.ui.theme.Shadow
 import com.softtimer.util.arcShadow
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlin.math.sin
 
+private const val TAG = "Clock"
 
 @Composable
 fun Clock(
@@ -182,7 +186,7 @@ fun TimerNumbers(timerService: TimerService, sizeModifier: Float) {
         //Numbers shadow
         Text(
             modifier = Modifier
-                .offset(y = (3f * sizeModifier).dp),//3
+                .offset(y = (4f * sizeModifier).dp, x = (1f * sizeModifier).dp),//3
             text = if (timerService.timerState == TimerState.Ringing) {
                 "00:00"
             } else {
@@ -194,7 +198,7 @@ fun TimerNumbers(timerService: TimerService, sizeModifier: Float) {
                 }
             },
             fontFamily = Orbitron,
-            color = FaintShadow,
+            color = FaintShadow1,
             fontSize = if (isHourVisible) (16f * sizeModifier).sp else (20f * sizeModifier).sp//16//20
         )
 
@@ -328,8 +332,22 @@ fun ProgressBar(sweepAngle: Float, diameter: Float, sizeModifier: Float) {
 
 @Composable
 fun Indicator(modifier: Modifier = Modifier, sweepAngle: Float, sizeModifier: Float) {
-    var shadowPosition by remember {
+    var shadowOffsetState by remember {
         mutableStateOf(0f)
+    }
+
+    val shadowOffset = animateFloatAsState(
+        targetValue = shadowOffsetState,
+        animationSpec = tween(easing = LinearEasing)
+    )
+
+    LaunchedEffect(key1 = sweepAngle) {
+        shadowOffsetState = calculateShadowXOffset(
+            sweepAngle = sweepAngle,
+            maxOffset = 5f,//8
+            minOffset = -5f,//-10
+            lightSourceOffset = 345f
+        )
     }
 
     Box(
@@ -345,12 +363,7 @@ fun Indicator(modifier: Modifier = Modifier, sweepAngle: Float, sizeModifier: Fl
                 .align(Alignment.BottomEnd)
                 .offset(x = (-5).dp)
                 .offset(
-                    x = calculateShadowXOffset(
-                        sweepAngle = sweepAngle,
-                        maxOffset = 5f,//8
-                        minOffset = -5f,//-10
-                        lightSourceOffset = 345f
-                    ).dp
+                    x = shadowOffset.value.dp
                 ),
             painter = painterResource(id = R.drawable.indicator_shadow),
             contentScale = ContentScale.FillBounds,

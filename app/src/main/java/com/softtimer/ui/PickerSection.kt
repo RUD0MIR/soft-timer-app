@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.softtimer.R
+import com.softtimer.TimerViewModel
 import com.softtimer.service.TimerService
 import com.softtimer.service.TimerState
 import com.softtimer.ui.theme.Black
@@ -55,42 +56,39 @@ import com.softtimer.util.getNumbersWithPad
 import kotlinx.coroutines.delay
 
 @Composable
-fun PickerSection(modifier: Modifier = Modifier, timerService: TimerService) {
+fun PickerSection(
+    modifier: Modifier = Modifier,
+    timerService: TimerService,
+    viewModel: TimerViewModel
+) {
     val timerState = timerService.timerState
 
-    var pickerVisibilityValue by remember {
-        mutableStateOf(1f)
-    }
     val pickerVisibility by animateFloatAsState(
-        targetValue = pickerVisibilityValue,
+        targetValue = viewModel.pickerVisibilityValue,
         animationSpec = tween(
             durationMillis = MID_ANIMATION_DURATION,
             easing = LinearEasing
         )
     )
 
-    var isVisible by remember {
-        mutableStateOf(true)
-    }
-
     LaunchedEffect(key1 = timerState) {
         when (timerState) {
             TimerState.Running -> {
-                pickerVisibilityValue = 0f
+                viewModel.pickerVisibilityValue = 0f
                 delay(MID_ANIMATION_DELAY)
-                isVisible = false
+                viewModel.isVisible = false
             }
 
             TimerState.Idle -> {
-                isVisible = true
-                pickerVisibilityValue = 1f
+                viewModel.isVisible = true
+                viewModel.pickerVisibilityValue = 1f
             }
 
             else -> {}
         }
     }
 
-    if (isVisible) {
+    if (viewModel.isVisible) {
         Box(
             contentAlignment = Alignment.Center,
             modifier = modifier
@@ -258,7 +256,7 @@ fun TestPreview() {
                 .background(Color(0xFFDAD8D8)),
             contentAlignment = Alignment.Center
         ) {
-            PickerSection(timerService = TimerService())
+//            PickerSection(timerService = TimerService())
         }
     }
 }

@@ -13,7 +13,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.app.NotificationCompat
-import com.softtimer.ui.theme.MID_ANIMATION_DELAY
 import com.softtimer.util.Constants.ACTION_SERVICE_RESET
 import com.softtimer.util.Constants.ACTION_SERVICE_START
 import com.softtimer.util.Constants.ACTION_SERVICE_STOP
@@ -25,12 +24,6 @@ import com.softtimer.util.formatTime
 import com.softtimer.util.getDurationInSec
 import com.softtimer.util.pad
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import java.util.*
 import javax.inject.Inject
 import kotlin.concurrent.fixedRateTimer
@@ -54,17 +47,29 @@ class TimerService : Service() {
 
     private lateinit var timer: Timer
 
-    var progressBarsweepAngle by mutableStateOf(0f)
+    private val alarmSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+    lateinit var ringtone: Ringtone
 
     var timerState by mutableStateOf(TimerState.Idle)
-        private set
-    var duration: Duration = ZERO
+
+    fun getTimerStateByName(name: String?): TimerState {
+        return when(name) {
+            TimerState.Idle.name -> TimerState.Idle
+            TimerState.Running.name -> TimerState.Running
+            TimerState.Paused.name -> TimerState.Paused
+            TimerState.Reset.name -> TimerState.Idle
+            TimerState.Ringing.name -> TimerState.Ringing
+            else -> TimerState.Idle
+        }
+    }
+
+    var duration: Duration = Duration.ZERO
         private set
 
     var showOvertime by mutableStateOf(false)
         private set
 
-    var overtimeDuration: Duration = ZERO
+    var overtimeDuration: Duration = Duration.ZERO
         private set
 
     var overtimeMins by mutableStateOf(0)
@@ -99,23 +104,18 @@ class TimerService : Service() {
         return abs(sState).pad()
     }
 
-
-    private val alarmSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
-    lateinit var ringtone: Ringtone
-
     override fun onCreate() {
         super.onCreate()
         ringtone = RingtoneManager.getRingtone(applicationContext, alarmSoundUri)
     }
+
     override fun onBind(p0: Intent?) = binder
 
     override fun onTaskRemoved(rootIntent: Intent?) {
         super.onTaskRemoved(rootIntent)
-        Log.d(TAG, "onTaskRemoved: ")
         stopForegroundService()
     }
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        Log.d(TAG, "onStartCommand:")
         when (intent?.getStringExtra(STOPWATCH_STATE)) {
             TimerState.Running.name -> {
                 setStopButton()
@@ -171,9 +171,34 @@ class TimerService : Service() {
         return super.onStartCommand(intent, flags, startId)
     }
 
+
+
+    private fun startForegroundService() {
+        createNotificationChannel()
+        startForeground(NOTIFICATION_ID, notificationBuilder.build())
+    }
+
+    private fun stopForegroundService() {
+        notificationManager.cancel(NOTIFICATION_ID)
+        stopForeground(STOP_FOREGROUND_REMOVE)
+        timer.cancel()
+        stopSelf()
+    }
+
+    private fun createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                NOTIFICATION_CHANNEL_ID,
+                NOTIFICATION_CHANNEL_NAME,
+                NotificationManager.IMPORTANCE_LOW
+            )
+            notificationManager.createNotificationChannel(channel)
+        }
+    }
+
     private fun startTimer(onTick: (h: String, m: String, s: String, millis: String) -> Unit) {
         showOvertime = false
-        overtimeDuration = ZERO
+        overtimeDuration = Duration.ZERO
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             ringtone.isLooping = true
@@ -185,7 +210,7 @@ class TimerService : Service() {
             s = sState
         )
 
-        if (duration != ZERO) {
+        if (duration != Duration.ZERO) {
             this@TimerService.timerState = TimerState.Running
 
             timer = fixedRateTimer(initialDelay = 1600L, period = 1000L) {//1000 1000
@@ -196,7 +221,7 @@ class TimerService : Service() {
                 if (duration.inWholeSeconds < 0 && timerState == TimerState.Running) {
                     onTimerExpired()
                     timer.cancel()
-                    duration = ZERO
+                    duration = Duration.ZERO
 
                     timer = fixedRateTimer(initialDelay = 1L, period = 1L) {
                         duration = duration.plus(1.milliseconds)
@@ -231,10 +256,10 @@ class TimerService : Service() {
     }
 
     private fun resetTimer() {
-            duration = Duration.ZERO
-            updateTimeUnits()
-            ringtone.stop()
-            this@TimerService.timerState = TimerState.Idle
+        duration = Duration.ZERO
+        updateTimeUnits()
+        ringtone.stop()
+        this@TimerService.timerState = TimerState.Idle
     }
 
     private fun updateTimeUnits(isTimeExpired: Boolean = false) {
@@ -250,29 +275,6 @@ class TimerService : Service() {
                 this@TimerService.minState = minutes
                 this@TimerService.sState = seconds
             }
-        }
-    }
-
-    private fun startForegroundService() {
-        createNotificationChannel()
-        startForeground(NOTIFICATION_ID, notificationBuilder.build())
-    }
-
-    private fun stopForegroundService() {
-        notificationManager.cancel(NOTIFICATION_ID)
-        stopForeground(STOP_FOREGROUND_REMOVE)
-        timer.cancel()
-        stopSelf()
-    }
-
-    private fun createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                NOTIFICATION_CHANNEL_ID,
-                NOTIFICATION_CHANNEL_NAME,
-                NotificationManager.IMPORTANCE_LOW
-            )
-            notificationManager.createNotificationChannel(channel)
         }
     }
 

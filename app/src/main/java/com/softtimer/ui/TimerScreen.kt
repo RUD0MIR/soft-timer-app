@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -33,12 +34,14 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.constraintlayout.compose.ConstraintLayout
 import com.airbnb.lottie.compose.LottieAnimation
 import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.rememberLottieComposition
 import com.softtimer.MainActivity
 import com.softtimer.R
+import com.softtimer.TimerViewModel
 import com.softtimer.service.ServiceHelper
 import com.softtimer.service.TimerService
 import com.softtimer.service.TimerState
@@ -53,6 +56,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun TimerScreen(
     timerService: TimerService,
+    viewModel: TimerViewModel
 ) {
     Box(
         modifier = Modifier
@@ -82,7 +86,8 @@ fun TimerScreen(
                     start.linkTo(parent.start)
                     end.linkTo(parent.end)
                 },
-                timerService = timerService
+                timerService = timerService,
+                viewModel = viewModel
             )
 
             PickerSection(
@@ -92,7 +97,8 @@ fun TimerScreen(
                     end.linkTo(parent.end)
                     bottom.linkTo(bottomGuideLine, margin = 18.dp)
                 },
-                timerService = timerService
+                timerService = timerService,
+                viewModel = viewModel
             )
         }
 

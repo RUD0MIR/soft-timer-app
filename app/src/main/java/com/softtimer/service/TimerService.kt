@@ -8,7 +8,6 @@ import android.media.Ringtone
 import android.media.RingtoneManager
 import android.os.Binder
 import android.os.Build
-import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -20,16 +19,15 @@ import com.softtimer.util.Constants.NOTIFICATION_CHANNEL_ID
 import com.softtimer.util.Constants.NOTIFICATION_CHANNEL_NAME
 import com.softtimer.util.Constants.NOTIFICATION_ID
 import com.softtimer.util.Constants.STOPWATCH_STATE
+import com.softtimer.util.absPad
+import com.softtimer.util.formatMillis
 import com.softtimer.util.formatTime
 import com.softtimer.util.getDurationInSec
-import com.softtimer.util.pad
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.*
 import javax.inject.Inject
 import kotlin.concurrent.fixedRateTimer
-import kotlin.math.abs
 import kotlin.time.Duration
-import kotlin.time.Duration.Companion.ZERO
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
@@ -52,19 +50,7 @@ class TimerService : Service() {
 
     var timerState by mutableStateOf(TimerState.Idle)
 
-    fun getTimerStateByName(name: String?): TimerState {
-        return when(name) {
-            TimerState.Idle.name -> TimerState.Idle
-            TimerState.Running.name -> TimerState.Running
-            TimerState.Paused.name -> TimerState.Paused
-            TimerState.Reset.name -> TimerState.Idle
-            TimerState.Ringing.name -> TimerState.Ringing
-            else -> TimerState.Idle
-        }
-    }
-
     var duration: Duration = Duration.ZERO
-        private set
 
     var showOvertime by mutableStateOf(false)
         private set
@@ -74,35 +60,11 @@ class TimerService : Service() {
 
     var overtimeMins by mutableStateOf(0)
     var overtimeSecs by mutableStateOf(0)
-    var overtimeMilis by mutableStateOf(0)
-
-    fun getOvertimeMins(): String {
-        return abs(overtimeMins).pad()
-    }
-
-    fun getOvertimeSecs(): String {
-        return abs(overtimeSecs).pad()
-    }
-
-    fun getOvertimeMillis(): String {
-        return String.format("%02d", overtimeMilis / 10000000)
-    }
+    var overtimeMillis by mutableStateOf(0)
 
     var hState by mutableStateOf(0)
     var minState by mutableStateOf(0)
     var sState by mutableStateOf(0)
-
-    fun getH(): String {
-        return abs(hState).pad()
-    }
-
-    fun getMin(): String {
-        return abs(minState).pad()
-    }
-
-    fun getS(): String {
-        return abs(sState).pad()
-    }
 
     override fun onCreate() {
         super.onCreate()
@@ -171,8 +133,6 @@ class TimerService : Service() {
         return super.onStartCommand(intent, flags, startId)
     }
 
-
-
     private fun startForegroundService() {
         createNotificationChannel()
         startForeground(NOTIFICATION_ID, notificationBuilder.build())
@@ -216,7 +176,7 @@ class TimerService : Service() {
             timer = fixedRateTimer(initialDelay = 1600L, period = 1000L) {//1000 1000
                 duration = duration.minus(1.seconds)
                 updateTimeUnits()
-                onTick(getH(), getMin(), getS(), getOvertimeMillis())
+                onTick(hState.absPad(), minState.absPad(), sState.absPad(), overtimeMillis.formatMillis())
 
                 if (duration.inWholeSeconds < 0 && timerState == TimerState.Running) {
                     onTimerExpired()
@@ -227,10 +187,10 @@ class TimerService : Service() {
                         duration = duration.plus(1.milliseconds)
                         updateTimeUnits(isTimeExpired = true)
                         onTick(
-                            getH(),
-                            getOvertimeMins(),
-                            getOvertimeSecs(),
-                            getOvertimeMillis()
+                            hState.absPad(),
+                            overtimeMins.absPad(),
+                            overtimeSecs.absPad(),
+                            overtimeMillis.formatMillis()
                         )
 
                         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
@@ -262,12 +222,12 @@ class TimerService : Service() {
         this@TimerService.timerState = TimerState.Idle
     }
 
-    private fun updateTimeUnits(isTimeExpired: Boolean = false) {
+    fun updateTimeUnits(isTimeExpired: Boolean = false) {
         if (isTimeExpired) {
             duration.toComponents { _, minutes, seconds, milliseconds ->
                 this@TimerService.overtimeMins = minutes
                 this@TimerService.overtimeSecs = seconds
-                this@TimerService.overtimeMilis = milliseconds
+                this@TimerService.overtimeMillis = milliseconds
             }
         } else {
             duration.toComponents { hours, minutes, seconds, _ ->

@@ -17,6 +17,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import kotlin.math.abs
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -37,6 +38,15 @@ fun formatTime(
 fun Int.pad(length: Int = 2, padChar: Char = '0'): String {
     return this.toString().padStart(length, padChar)
 }
+
+fun Int.absPad(length: Int = 2, padChar: Char = '0'): String {
+    return abs(this).pad()
+}
+
+fun Int.formatMillis(): String {
+    return String.format("%02d", this / 10000000)
+}
+
 
 fun getNumbersWithPad(range: IntRange): List<String> {
     val timeNumbers = mutableListOf("00")

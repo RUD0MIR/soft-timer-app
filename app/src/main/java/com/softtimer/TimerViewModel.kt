@@ -16,6 +16,7 @@ private const val TAG = "TimerViewModel"
 
 class TimerViewModel(application: Application) : AndroidViewModel(application) {
     //variables for Clock.kt
+    var lastSetTime by mutableStateOf(0L)
     var clockInitialStart by mutableStateOf(true)
     var progressBarSweepAngleTarget by mutableStateOf(360f)
     var progressBarSweepAngle by mutableStateOf(0f)
@@ -25,11 +26,14 @@ class TimerViewModel(application: Application) : AndroidViewModel(application) {
     var pickerVisibilityValue by mutableStateOf(1f)
     var isVisible by mutableStateOf(true)
 
+    //TODO variables for NumberPicker.kt
+    var hPickerState by mutableStateOf(0)
+    var minPickerState by mutableStateOf(0)
+    var sPickerState by mutableStateOf(0)
+
+
     private val repository = DataStoreRepository(application)
 
-    override fun onCleared() {
-        super.onCleared()
-    }
     suspend fun <T> readFromDataStore(key: Preferences.Key<T>): Flow<T?> {
             return repository.readFromDataStore(key)
     }

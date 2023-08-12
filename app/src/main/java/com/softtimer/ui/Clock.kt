@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.softtimer.R
 import com.softtimer.TimerViewModel
+import com.softtimer.repository.DataStoreKeys
 import com.softtimer.service.TimerService
 import com.softtimer.service.TimerState
 import com.softtimer.ui.theme.Black
@@ -47,12 +48,13 @@ import com.softtimer.ui.theme.FaintShadow1
 import com.softtimer.ui.theme.Orbitron
 import com.softtimer.ui.theme.SoftTImerTheme
 import com.softtimer.ui.theme.LightBlue
-import com.softtimer.ui.theme.MID_ANIMATION_DELAY
 import com.softtimer.ui.theme.MID_ANIMATION_DURATION
 import com.softtimer.ui.theme.MidBlue
+import com.softtimer.util.absPad
 import com.softtimer.util.arcShadow
-import kotlinx.coroutines.delay
 import kotlin.math.sin
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 private const val TAG = "Clock1"
 
@@ -91,6 +93,14 @@ fun Clock(
                 ) { value, _ ->
                     viewModel.progressBarSweepAngle = value
                 }
+
+                viewModel.readFromDataStore(key = DataStoreKeys.LAST_TIME_KEY).collect { lastSetTime ->
+                    if (lastSetTime != null) {
+                        timerService.duration = timerService.duration.plus(lastSetTime.seconds)
+                        timerService.updateTimeUnits()
+                    }
+
+                }
             }
 
             TimerState.Running -> {
@@ -108,7 +118,11 @@ fun Clock(
                     ) { value, _ ->
                         viewModel.progressBarSweepAngle = value
                     }
-//                    viewModel.progressBarSweepAngleTarget = 360f
+
+                    viewModel.saveToDataStore(
+                        key = DataStoreKeys.LAST_TIME_KEY,
+                        value = timerService.duration.inWholeSeconds
+                    )
                 }
                 animate(
                     initialValue = viewModel.progressBarSweepAngle,
@@ -124,7 +138,10 @@ fun Clock(
             TimerState.Paused -> {
                 viewModel.progressBarSweepAngleTarget = viewModel.progressBarSweepAngle
             }
-
+            TimerState.Ringing -> {
+                viewModel.progressBarSweepAngleTarget = 0f
+                viewModel.progressBarSweepAngleTarget = 360f
+            }
             else -> {}
         }
     }
@@ -182,13 +199,13 @@ fun Clock(
 @Composable
 fun TimerNumbers(timerService: TimerService, sizeModifier: Float) {
     val isHourVisible = timerService.hState != 0
-    val hours = timerService.getH()
-    val minutes = timerService.getMin()
-    val seconds = timerService.getS()
+    val hours = timerService.hState.absPad()
+    val minutes = timerService.minState.absPad()
+    val seconds = timerService.sState.absPad()
 
-    val overtimeMins = timerService.getOvertimeMins()
-    val overtimeSecs = timerService.getOvertimeSecs()
-    val overtimeMillis = timerService.getOvertimeMillis()
+    val overtimeMins = timerService.overtimeMins.absPad()
+    val overtimeSecs = timerService.overtimeSecs.absPad()
+    val overtimeMillis = timerService.overtimeMillis.absPad()
 
 
     Box(

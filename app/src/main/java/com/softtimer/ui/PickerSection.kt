@@ -248,15 +248,5 @@ fun StyledNumberPicker(
 @Composable
 fun TestPreview() {
     SoftTImerTheme {
-        var value by remember { mutableStateOf("00") }
-
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color(0xFFDAD8D8)),
-            contentAlignment = Alignment.Center
-        ) {
-//            PickerSection(timerService = TimerService())
-        }
     }
 }

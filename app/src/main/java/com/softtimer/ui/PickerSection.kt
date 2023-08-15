@@ -1,19 +1,16 @@
 package com.softtimer.ui
 
+import android.util.Log
 import android.widget.NumberPicker
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
@@ -22,10 +19,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -104,8 +100,11 @@ fun PickerSection(
                     modifier = Modifier
                         .offset(x = 14.dp)
                         .alpha(pickerVisibility),
-                    values = getNumbersWithPad(1..23),
+                    timerState = timerService.timerState,
+                    viewModel = viewModel,
+                    range = getNumbersWithPad(1..24),
                     showDivider = true,
+                    pickerValue = viewModel.hPickerState,
                     name = "h"
                 ) { selectedItem ->
                     timerService.hState = selectedItem
@@ -113,8 +112,11 @@ fun PickerSection(
 
                 StyledNumberPicker(
                     modifier = Modifier.alpha(pickerVisibility),
-                    values = getNumbersWithPad(1..59),
+                    timerState = timerService.timerState,
+                    viewModel = viewModel,
+                    range = getNumbersWithPad(1..59),
                     name = "min",
+                    pickerValue = viewModel.minPickerState,
                     showDivider = true,
                 ) { selectedItem ->
                     timerService.minState = selectedItem
@@ -124,7 +126,10 @@ fun PickerSection(
                     modifier = Modifier
                         .offset(x = (-14).dp)
                         .alpha(pickerVisibility),
-                    values = getNumbersWithPad(1..59),
+                    timerState = timerService.timerState,
+                    viewModel = viewModel,
+                    range = getNumbersWithPad(1..59),
+                    pickerValue = viewModel.sPickerState,
                     name = "s"
                 ) { selectedItem ->
                     timerService.sState = selectedItem
@@ -137,9 +142,12 @@ fun PickerSection(
 @Composable
 fun StyledNumberPicker(
     modifier: Modifier = Modifier,
-    values: List<String>,
+    timerState: TimerState,
+    range: List<String>,
+    viewModel: TimerViewModel,
     showDivider: Boolean = false,
     name: String,
+    pickerValue: Int,
     onValueChanged: (Int) -> Unit
 ) {
     Box(
@@ -177,6 +185,12 @@ fun StyledNumberPicker(
                 .fillMaxWidth(0.56f)
                 .fillMaxHeight(0.80f),
         ) {
+            var pickerInitialState by remember {
+                mutableStateOf(true)
+            }
+            LaunchedEffect(key1 = timerState) {
+                if (timerState == TimerState.Idle) pickerInitialState = true
+            }
             AndroidView(
                 modifier = Modifier.fillMaxWidth(),
                 factory = { context ->
@@ -184,15 +198,22 @@ fun StyledNumberPicker(
                         minValue = 0
                         isSoundEffectsEnabled = true
                         clipToOutline = true
-                        maxValue = values.size - 1
-                        displayedValues = values.toTypedArray()
+                        maxValue = range.size - 1
+                        displayedValues = range.toTypedArray()
                         clipToPadding = true
+                        value = pickerValue
 
                         setOnValueChangedListener { numberPicker, i, i2 ->
-                            onValueChanged(numberPicker.value)
+                                onValueChanged(numberPicker.value)
                         }
                     }
-                }
+                },
+//                update = {
+//                    Log.d("TAG", "${viewModel.secondReset}")
+//                    if(viewModel.secondReset) {
+//                        it.value = 0
+//                    }
+//                }
             )
 
             //shadow effect

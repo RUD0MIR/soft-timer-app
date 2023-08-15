@@ -54,6 +54,8 @@ import com.softtimer.util.absPad
 import com.softtimer.util.arcShadow
 import kotlin.math.sin
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
 private const val TAG = "Clock1"
@@ -83,6 +85,11 @@ fun Clock(
                 viewModel.clockSizeModifier = 1.1f
                 viewModel.clockInitialStart = true
 
+                timerService.hState = viewModel.hPickerState
+                timerService.minState = viewModel.minPickerState
+                timerService.sState = viewModel.sPickerState
+
+
                 animate(
                     initialValue = viewModel.progressBarSweepAngle,
                     targetValue = 0f,
@@ -93,20 +100,16 @@ fun Clock(
                 ) { value, _ ->
                     viewModel.progressBarSweepAngle = value
                 }
-
-                viewModel.readFromDataStore(key = DataStoreKeys.LAST_TIME_KEY).collect { lastSetTime ->
-                    if (lastSetTime != null) {
-                        timerService.duration = timerService.duration.plus(lastSetTime.seconds)
-                        timerService.updateTimeUnits()
-                    }
-
-                }
             }
 
             TimerState.Running -> {
                 if (viewModel.clockInitialStart) {
                     viewModel.clockSizeModifier = 1.4f
                     viewModel.clockInitialStart = false
+
+                    viewModel.hPickerState = timerService.hState
+                    viewModel.minPickerState = timerService.minState
+                    viewModel.sPickerState = timerService.sState
 
                     animate(
                         initialValue = viewModel.progressBarSweepAngle,
@@ -118,11 +121,6 @@ fun Clock(
                     ) { value, _ ->
                         viewModel.progressBarSweepAngle = value
                     }
-
-                    viewModel.saveToDataStore(
-                        key = DataStoreKeys.LAST_TIME_KEY,
-                        value = timerService.duration.inWholeSeconds
-                    )
                 }
                 animate(
                     initialValue = viewModel.progressBarSweepAngle,
@@ -135,13 +133,16 @@ fun Clock(
                     viewModel.progressBarSweepAngle = value
                 }
             }
+
             TimerState.Paused -> {
                 viewModel.progressBarSweepAngleTarget = viewModel.progressBarSweepAngle
             }
+
             TimerState.Ringing -> {
                 viewModel.progressBarSweepAngleTarget = 0f
                 viewModel.progressBarSweepAngleTarget = 360f
             }
+
             else -> {}
         }
     }
@@ -199,14 +200,14 @@ fun Clock(
 @Composable
 fun TimerNumbers(timerService: TimerService, sizeModifier: Float) {
     val isHourVisible = timerService.hState != 0
+    val timerState = timerService.timerState
     val hours = timerService.hState.absPad()
     val minutes = timerService.minState.absPad()
     val seconds = timerService.sState.absPad()
 
     val overtimeMins = timerService.overtimeMins.absPad()
     val overtimeSecs = timerService.overtimeSecs.absPad()
-    val overtimeMillis = timerService.overtimeMillis.absPad()
-
+    val overtimeMillis = timerService.getOvertimeMillis()
 
     Box(
         modifier = Modifier
@@ -217,7 +218,7 @@ fun TimerNumbers(timerService: TimerService, sizeModifier: Float) {
         Text(
             modifier = Modifier
                 .offset(y = (4f * sizeModifier).dp, x = (1f * sizeModifier).dp),//3
-            text = if (timerService.timerState == TimerState.Ringing) {
+            text = if (timerState == TimerState.Ringing) {
                 "00:00"
             } else {
                 buildString {
@@ -229,12 +230,14 @@ fun TimerNumbers(timerService: TimerService, sizeModifier: Float) {
             },
             fontFamily = Orbitron,
             color = FaintShadow1,
-            fontSize = if (isHourVisible) (16f * sizeModifier).sp else (20f * sizeModifier).sp//16//20
+            fontSize = if (isHourVisible)
+                (16f * sizeModifier).sp
+            else (20f * sizeModifier).sp//16//20
         )
 
         //Clock numbers
         Text(
-            text = if (timerService.timerState == TimerState.Ringing) {
+            text = if (timerState == TimerState.Ringing) {
                 "00:00"
             } else {
                 buildString {

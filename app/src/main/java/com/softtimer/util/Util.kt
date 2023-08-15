@@ -21,6 +21,8 @@ import kotlin.math.abs
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
+private const val TAG = "Util"
+
 fun Offset.Companion.offsetFromCenter(x: Float = 0f, y: Float = 0f, center: Offset): Offset {
     return Offset(center.x + x, center.y + y)
 }
@@ -42,11 +44,6 @@ fun Int.pad(length: Int = 2, padChar: Char = '0'): String {
 fun Int.absPad(length: Int = 2, padChar: Char = '0'): String {
     return abs(this).pad()
 }
-
-fun Int.formatMillis(): String {
-    return String.format("%02d", this / 10000000)
-}
-
 
 fun getNumbersWithPad(range: IntRange): List<String> {
     val timeNumbers = mutableListOf("00")

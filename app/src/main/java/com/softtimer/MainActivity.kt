@@ -15,9 +15,12 @@ import androidx.activity.viewModels
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.lifecycleScope
+import com.softtimer.repository.DataStoreKeys
 import com.softtimer.service.TimerService
 import com.softtimer.ui.TimerScreen
 import com.softtimer.ui.theme.SoftTImerTheme
+import kotlinx.coroutines.launch
 
 private const val TAG = "MainActivity"
 
@@ -46,6 +49,20 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        lifecycleScope.launch {
+            viewModel.readFromDataStore(key = DataStoreKeys.LAST_HOUR).collect { hours ->
+                if (hours != null) viewModel.hPickerState = hours
+            }
+            viewModel.readFromDataStore(key = DataStoreKeys.LAST_MIN).collect { minutes ->
+                if (minutes != null) viewModel.minPickerState = minutes
+            }
+            viewModel.readFromDataStore(key = DataStoreKeys.LAST_SEC).collect { seconds ->
+                if (seconds != null) {
+                    viewModel.sPickerState = seconds
+                }
+            }
+        }
+
         setContent {
             SoftTImerTheme {
                 if (isBound) {
@@ -74,5 +91,18 @@ class MainActivity : ComponentActivity() {
         super.onStop()
         unbindService(connection)
         isBound = false
+
+        viewModel.saveToDataStore(
+            key = DataStoreKeys.LAST_HOUR,
+            value = timerService.duration.inWholeHours.toInt()
+        )
+        viewModel.saveToDataStore(
+            key = DataStoreKeys.LAST_MIN,
+            value = timerService.duration.inWholeMinutes.toInt()
+        )
+        viewModel.saveToDataStore(
+            key = DataStoreKeys.LAST_SEC,
+            value = timerService.duration.inWholeSeconds.toInt()
+        )
     }
 }

@@ -31,6 +31,8 @@ class TimerViewModel(application: Application) : AndroidViewModel(application) {
     var minPickerState by mutableStateOf(0)
     var sPickerState by mutableStateOf(0)
 
+    var secondReset by mutableStateOf(false)
+
 
     private val repository = DataStoreRepository(application)
 

@@ -104,13 +104,14 @@ fun TimerScreen(
 
         ActionsSection(
             modifier = Modifier.align(Alignment.BottomCenter),
-            timerService = timerService
+            timerService = timerService,
+            viewModel = viewModel
         )
     }
 }
 
 @Composable
-fun ActionsSection(modifier: Modifier = Modifier, timerService: TimerService) {
+fun ActionsSection(modifier: Modifier = Modifier, viewModel: TimerViewModel, timerService: TimerService) {
     val context = LocalContext.current
     val timerState = timerService.timerState
 
@@ -123,10 +124,22 @@ fun ActionsSection(modifier: Modifier = Modifier, timerService: TimerService) {
         RestartButton(
             size = if (timerState == TimerState.Ringing) 90.dp else 50.dp,
         ) {
+//            if(viewModel.secondReset) {
+//                viewModel.hPickerState = 0
+//                viewModel.minPickerState = 0
+//                viewModel.sPickerState = 0
+//
+//                timerService.hState = 0
+//                timerService.minState = 0
+//                timerService.sState = 0
+//            }
+
             ServiceHelper.triggerForegroundService(
                 context = context,
                 action = ACTION_SERVICE_RESET
             )
+            viewModel.secondReset = true
+
         }
 
         if (timerState != TimerState.Ringing) {
@@ -380,6 +393,5 @@ fun ThemeButton(
 @Composable
 fun TimerScreenPreview() {
     SoftTImerTheme {
-        ActionsSection(timerService = TimerService())
     }
 }

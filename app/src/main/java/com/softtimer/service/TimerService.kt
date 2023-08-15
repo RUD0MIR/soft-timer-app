@@ -20,7 +20,6 @@ import com.softtimer.util.Constants.NOTIFICATION_CHANNEL_NAME
 import com.softtimer.util.Constants.NOTIFICATION_ID
 import com.softtimer.util.Constants.STOPWATCH_STATE
 import com.softtimer.util.absPad
-import com.softtimer.util.formatMillis
 import com.softtimer.util.formatTime
 import com.softtimer.util.getDurationInSec
 import dagger.hilt.android.AndroidEntryPoint
@@ -61,6 +60,10 @@ class TimerService : Service() {
     var overtimeMins by mutableStateOf(0)
     var overtimeSecs by mutableStateOf(0)
     var overtimeMillis by mutableStateOf(0)
+
+    fun getOvertimeMillis(): String {
+        return String.format("%02d", overtimeMillis / 10000000)
+    }
 
     var hState by mutableStateOf(0)
     var minState by mutableStateOf(0)
@@ -176,7 +179,7 @@ class TimerService : Service() {
             timer = fixedRateTimer(initialDelay = 1600L, period = 1000L) {//1000 1000
                 duration = duration.minus(1.seconds)
                 updateTimeUnits()
-                onTick(hState.absPad(), minState.absPad(), sState.absPad(), overtimeMillis.formatMillis())
+                onTick(hState.absPad(), minState.absPad(), sState.absPad(), getOvertimeMillis())
 
                 if (duration.inWholeSeconds < 0 && timerState == TimerState.Running) {
                     onTimerExpired()
@@ -190,7 +193,7 @@ class TimerService : Service() {
                             hState.absPad(),
                             overtimeMins.absPad(),
                             overtimeSecs.absPad(),
-                            overtimeMillis.formatMillis()
+                            getOvertimeMillis()
                         )
 
                         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
@@ -217,7 +220,6 @@ class TimerService : Service() {
 
     private fun resetTimer() {
         duration = Duration.ZERO
-        updateTimeUnits()
         ringtone.stop()
         this@TimerService.timerState = TimerState.Idle
     }

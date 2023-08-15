@@ -8,6 +8,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.floatPreferencesKey
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -46,6 +47,7 @@ class DataStoreRepository(context: Context) {
 }
 
 object DataStoreKeys {
-    //data store keys for Clock.kt
-    val LAST_TIME_KEY = longPreferencesKey("last_time")
+    val LAST_HOUR = intPreferencesKey("last_hour")
+    val LAST_MIN = intPreferencesKey("last_minute")
+    val LAST_SEC = intPreferencesKey("last_second")
 }

@@ -51,6 +51,8 @@ import com.softtimer.ui.theme.SoftTImerTheme
 import com.softtimer.util.getNumbersWithPad
 import kotlinx.coroutines.delay
 
+private const val TAG = "PickerSection"
+
 @Composable
 fun PickerSection(
     modifier: Modifier = Modifier,
@@ -108,6 +110,7 @@ fun PickerSection(
                     name = "h"
                 ) { selectedItem ->
                     timerService.hState = selectedItem
+                    viewModel.hPickerState = selectedItem
                 }
 
                 StyledNumberPicker(
@@ -120,6 +123,7 @@ fun PickerSection(
                     showDivider = true,
                 ) { selectedItem ->
                     timerService.minState = selectedItem
+                    viewModel.minPickerState = selectedItem
                 }
 
                 StyledNumberPicker(
@@ -133,6 +137,7 @@ fun PickerSection(
                     name = "s"
                 ) { selectedItem ->
                     timerService.sState = selectedItem
+                    viewModel.sPickerState = selectedItem
                 }
             }
         }
@@ -185,12 +190,6 @@ fun StyledNumberPicker(
                 .fillMaxWidth(0.56f)
                 .fillMaxHeight(0.80f),
         ) {
-            var pickerInitialState by remember {
-                mutableStateOf(true)
-            }
-            LaunchedEffect(key1 = timerState) {
-                if (timerState == TimerState.Idle) pickerInitialState = true
-            }
             AndroidView(
                 modifier = Modifier.fillMaxWidth(),
                 factory = { context ->
@@ -201,19 +200,16 @@ fun StyledNumberPicker(
                         maxValue = range.size - 1
                         displayedValues = range.toTypedArray()
                         clipToPadding = true
-                        value = pickerValue
 
                         setOnValueChangedListener { numberPicker, i, i2 ->
                                 onValueChanged(numberPicker.value)
                         }
                     }
                 },
-//                update = {
-//                    Log.d("TAG", "${viewModel.secondReset}")
-//                    if(viewModel.secondReset) {
-//                        it.value = 0
-//                    }
-//                }
+                update = {
+                        it.value = pickerValue
+                    Log.d(TAG, "${it.value}")
+                }
             )
 
             //shadow effect

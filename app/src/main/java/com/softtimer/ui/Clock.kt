@@ -82,14 +82,19 @@ fun Clock(
     LaunchedEffect(key1 = timerState) {
         when (timerState) {
             TimerState.Idle -> {
-                viewModel.clockSizeModifier = 1.1f
-                viewModel.clockInitialStart = true
+                viewModel.apply {
+                    clockSizeModifier = 1.1f
+                    clockInitialStart = true
+                    clockStartResetAnimationRunning = true
+                }
 
-                timerService.hState = viewModel.hPickerState
-                timerService.minState = viewModel.minPickerState
-                timerService.sState = viewModel.sPickerState
+                timerService.apply {
+                    hState = viewModel.hPickerState
+                    minState = viewModel.minPickerState
+                    sState = viewModel.sPickerState
+                }
 
-
+                //progress bar animation that started when timer reset
                 animate(
                     initialValue = viewModel.progressBarSweepAngle,
                     targetValue = 0f,
@@ -100,17 +105,24 @@ fun Clock(
                 ) { value, _ ->
                     viewModel.progressBarSweepAngle = value
                 }
+
+                viewModel.clockStartResetAnimationRunning = false
             }
 
             TimerState.Running -> {
                 if (viewModel.clockInitialStart) {
-                    viewModel.clockSizeModifier = 1.4f
-                    viewModel.clockInitialStart = false
+                    viewModel.apply {
+                        clockSizeModifier = 1.4f
+                        clockInitialStart = false
 
-                    viewModel.hPickerState = timerService.hState
-                    viewModel.minPickerState = timerService.minState
-                    viewModel.sPickerState = timerService.sState
+                        hPickerState = timerService.hState
+                        minPickerState = timerService.minState
+                        sPickerState = timerService.sState
 
+                        clockStartResetAnimationRunning = true
+                    }
+
+                    //progress bar animation that started when timer does
                     animate(
                         initialValue = viewModel.progressBarSweepAngle,
                         targetValue = 360f,
@@ -121,7 +133,10 @@ fun Clock(
                     ) { value, _ ->
                         viewModel.progressBarSweepAngle = value
                     }
+
+                    viewModel.clockStartResetAnimationRunning = false
                 }
+                //progress bar animation that running with timer
                 animate(
                     initialValue = viewModel.progressBarSweepAngle,
                     targetValue = 0f,
@@ -139,8 +154,10 @@ fun Clock(
             }
 
             TimerState.Ringing -> {
-                viewModel.progressBarSweepAngleTarget = 0f
-                viewModel.progressBarSweepAngleTarget = 360f
+                viewModel.apply {
+                    progressBarSweepAngleTarget = 0f
+                    progressBarSweepAngleTarget = 360f
+                }
             }
 
             else -> {}

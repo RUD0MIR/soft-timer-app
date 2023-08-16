@@ -16,23 +16,22 @@ private const val TAG = "TimerViewModel"
 
 class TimerViewModel(application: Application) : AndroidViewModel(application) {
     //variables for Clock.kt
-    var lastSetTime by mutableStateOf(0L)
     var clockInitialStart by mutableStateOf(true)
     var progressBarSweepAngleTarget by mutableStateOf(360f)
     var progressBarSweepAngle by mutableStateOf(0f)
     var clockSizeModifier by mutableStateOf(1.1f)
+    var clockStartResetAnimationRunning by mutableStateOf(false)
 
     //variables for PickerSection.kt
     var pickerVisibilityValue by mutableStateOf(1f)
     var isVisible by mutableStateOf(true)
 
-    //TODO variables for NumberPicker.kt
+    //variables for save last set time and show in NumberPicker when timer is reset
     var hPickerState by mutableStateOf(0)
     var minPickerState by mutableStateOf(0)
     var sPickerState by mutableStateOf(0)
 
     var secondReset by mutableStateOf(false)
-
 
     private val repository = DataStoreRepository(application)
 

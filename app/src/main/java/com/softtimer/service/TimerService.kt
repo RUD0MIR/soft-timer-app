@@ -52,7 +52,6 @@ class TimerService : Service() {
     var duration: Duration = Duration.ZERO
 
     var showOvertime by mutableStateOf(false)
-        private set
 
     var overtimeDuration: Duration = Duration.ZERO
         private set
@@ -219,7 +218,6 @@ class TimerService : Service() {
     }
 
     private fun resetTimer() {
-        duration = Duration.ZERO
         ringtone.stop()
         this@TimerService.timerState = TimerState.Idle
     }

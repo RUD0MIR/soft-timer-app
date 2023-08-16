@@ -1,6 +1,7 @@
 package com.softtimer.ui
 
 import android.content.Intent
+import android.util.Log
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.tween
@@ -45,13 +46,18 @@ import com.softtimer.TimerViewModel
 import com.softtimer.service.ServiceHelper
 import com.softtimer.service.TimerService
 import com.softtimer.service.TimerState
+import com.softtimer.ui.theme.MID_ANIMATION_DELAY
 import com.softtimer.ui.theme.MID_ANIMATION_DURATION
 import com.softtimer.ui.theme.SHORT_ANIMATION_DURATION
 import com.softtimer.ui.theme.SoftTImerTheme
 import com.softtimer.util.Constants.ACTION_SERVICE_RESET
 import com.softtimer.util.Constants.ACTION_SERVICE_START
 import com.softtimer.util.Constants.ACTION_SERVICE_STOP
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.time.Duration
+
+private const val TAG = "TimerScreen"
 
 @Composable
 fun TimerScreen(
@@ -111,7 +117,11 @@ fun TimerScreen(
 }
 
 @Composable
-fun ActionsSection(modifier: Modifier = Modifier, viewModel: TimerViewModel, timerService: TimerService) {
+fun ActionsSection(
+    modifier: Modifier = Modifier,
+    viewModel: TimerViewModel,
+    timerService: TimerService
+) {
     val context = LocalContext.current
     val timerState = timerService.timerState
 
@@ -124,21 +134,31 @@ fun ActionsSection(modifier: Modifier = Modifier, viewModel: TimerViewModel, tim
         RestartButton(
             size = if (timerState == TimerState.Ringing) 90.dp else 50.dp,
         ) {
-//            if(viewModel.secondReset) {
-//                viewModel.hPickerState = 0
-//                viewModel.minPickerState = 0
-//                viewModel.sPickerState = 0
-//
-//                timerService.hState = 0
-//                timerService.minState = 0
-//                timerService.sState = 0
-//            }
-
-            ServiceHelper.triggerForegroundService(
-                context = context,
-                action = ACTION_SERVICE_RESET
-            )
-            viewModel.secondReset = true
+            Log.d(TAG, "duration, ${timerService.duration}")
+            if (
+                timerState == TimerState.Running ||
+                timerState == TimerState.Paused ||
+                timerState == TimerState.Ringing &&
+                !viewModel.clockStartResetAnimationRunning
+            ) {
+                ServiceHelper.triggerForegroundService(
+                    context = context,
+                    action = ACTION_SERVICE_RESET
+                )
+                viewModel.secondReset = true
+            } else if (timerState == TimerState.Idle) {
+                viewModel.apply {
+                    hPickerState = 0
+                    minPickerState = 0
+                    sPickerState = 0
+                }
+                timerService.apply {
+                    hState = 0
+                    minState = 0
+                    sState = 0
+                    showOvertime = false
+                }
+            }
 
         }
 
@@ -147,11 +167,13 @@ fun ActionsSection(modifier: Modifier = Modifier, viewModel: TimerViewModel, tim
                 size = 90.dp,
                 timerState = timerState
             ) {
-                ServiceHelper.triggerForegroundService(
-                    context = context,
-                    action = if (timerState == TimerState.Running) ACTION_SERVICE_STOP
-                    else ACTION_SERVICE_START
-                )
+                if (!viewModel.clockStartResetAnimationRunning) {
+                    ServiceHelper.triggerForegroundService(
+                        context = context,
+                        action = if (timerState == TimerState.Running) ACTION_SERVICE_STOP
+                        else ACTION_SERVICE_START
+                    )
+                }
             }
 
             ThemeButton(size = 50.dp) {
@@ -171,7 +193,6 @@ fun RestartButton(
     var isPlaying by remember { mutableStateOf(false) }
     var progress by remember { mutableStateOf(1f) }
 
-
     LaunchedEffect(key1 = isPlaying) {
         if (isPlaying) {
             var targetValue = 1f
@@ -185,7 +206,6 @@ fun RestartButton(
                 )
             ) { value, _ ->
                 progress = value
-//                if(value == targetValue) isPlaying = false
             }
 
             targetValue = 0.5f

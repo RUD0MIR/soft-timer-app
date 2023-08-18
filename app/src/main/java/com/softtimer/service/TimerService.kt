@@ -1,17 +1,21 @@
 package com.softtimer.service
 
+import android.annotation.SuppressLint
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
+import android.content.Context
 import android.content.Intent
 import android.media.Ringtone
 import android.media.RingtoneManager
 import android.os.Binder
 import android.os.Build
+import android.os.PowerManager
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.app.NotificationCompat
+import com.softtimer.MainActivity
 import com.softtimer.util.Constants.ACTION_SERVICE_RESET
 import com.softtimer.util.Constants.ACTION_SERVICE_START
 import com.softtimer.util.Constants.ACTION_SERVICE_STOP
@@ -208,6 +212,16 @@ class TimerService : Service() {
         this@TimerService.timerState = TimerState.Ringing
         ringtone.play()
         showOvertime = true
+
+        val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
+        val isScreenOff = !powerManager.isInteractive
+
+        if (isScreenOff) {
+            Intent(applicationContext, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                startActivity(this)
+            }
+        }
     }
 
     private fun stopTimer() {
@@ -222,7 +236,7 @@ class TimerService : Service() {
         this@TimerService.timerState = TimerState.Idle
     }
 
-    fun updateTimeUnits(isTimeExpired: Boolean = false) {
+    private fun updateTimeUnits(isTimeExpired: Boolean = false) {
         if (isTimeExpired) {
             duration.toComponents { _, minutes, seconds, milliseconds ->
                 this@TimerService.overtimeMins = minutes
@@ -258,6 +272,7 @@ class TimerService : Service() {
         )
     }
 
+    @SuppressLint("RestrictedApi")
     private fun setStopButton() {
         notificationBuilder.mActions.removeAt(0)
         notificationBuilder.mActions.add(
@@ -271,6 +286,7 @@ class TimerService : Service() {
         notificationManager.notify(NOTIFICATION_ID, notificationBuilder.build())
     }
 
+    @SuppressLint("RestrictedApi")
     private fun setResumeButton() {
         notificationBuilder.mActions.removeAt(0)
         notificationBuilder.mActions.add(

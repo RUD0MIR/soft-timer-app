@@ -5,9 +5,11 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
+import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
 import android.util.Log
+import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -21,6 +23,7 @@ import com.softtimer.service.TimerService
 import com.softtimer.ui.TimerScreen
 import com.softtimer.ui.theme.SoftTImerTheme
 import kotlinx.coroutines.launch
+
 
 private const val TAG = "MainActivity"
 
@@ -49,20 +52,19 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        lifecycleScope.launch {
-            viewModel.readFromDataStore(key = DataStoreKeys.LAST_HOUR).collect { hours ->
-                if (hours != null) viewModel.hPickerState = hours
-            }
-            viewModel.readFromDataStore(key = DataStoreKeys.LAST_MIN).collect { minutes ->
-                if (minutes != null) viewModel.minPickerState = minutes
-            }
-            viewModel.readFromDataStore(key = DataStoreKeys.LAST_SEC).collect { seconds ->
-                if (seconds != null) {
-                    viewModel.sPickerState = seconds
-                }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+            setShowWhenLocked(true)
+            setTurnScreenOn(true)
+        } else {
+            window.apply {
+                addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED)
+                addFlags(
+                    WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
+                            or WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
+                            or WindowManager.LayoutParams.FLAG_ALLOW_LOCK_WHILE_SCREEN_ON
+                )
             }
         }
-
         setContent {
             SoftTImerTheme {
                 if (isBound) {
@@ -91,18 +93,5 @@ class MainActivity : ComponentActivity() {
         super.onStop()
         unbindService(connection)
         isBound = false
-
-        viewModel.saveToDataStore(
-            key = DataStoreKeys.LAST_HOUR,
-            value = timerService.duration.inWholeHours.toInt()
-        )
-        viewModel.saveToDataStore(
-            key = DataStoreKeys.LAST_MIN,
-            value = timerService.duration.inWholeMinutes.toInt()
-        )
-        viewModel.saveToDataStore(
-            key = DataStoreKeys.LAST_SEC,
-            value = timerService.duration.inWholeSeconds.toInt()
-        )
     }
 }

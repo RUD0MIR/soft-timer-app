@@ -9,11 +9,13 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -50,6 +52,8 @@ import com.softtimer.ui.theme.SoftTImerTheme
 import com.softtimer.ui.theme.LightBlue
 import com.softtimer.ui.theme.MID_ANIMATION_DURATION
 import com.softtimer.ui.theme.MidBlue
+import com.softtimer.util.Constants.CLOCK_MAX_SIZE
+import com.softtimer.util.Constants.CLOCK_MIN_SIZE
 import com.softtimer.util.absPad
 import com.softtimer.util.arcShadow
 import kotlin.math.sin
@@ -63,118 +67,27 @@ private const val TAG = "Clock1"
 @Composable
 fun Clock(
     modifier: Modifier = Modifier,
-    timerService: TimerService,
-    viewModel: TimerViewModel
+    viewModel: TimerViewModel,
+    sizeModifier: Float,
+    timerState: TimerState,
+    timerNumbers: @Composable (() -> Unit),
+    onTimerStateChanged: () -> Unit
 ) {
-    val timerState = timerService.timerState
-    var animDurationValue by rememberSaveable {
-        mutableStateOf(MID_ANIMATION_DURATION)
-    }
-
-    val sizeModifier = animateFloatAsState(
-        targetValue = viewModel.clockSizeModifier,
-        animationSpec = tween(
-            durationMillis = MID_ANIMATION_DURATION,
-            easing = LinearEasing
-        )
-    )
-
     LaunchedEffect(key1 = timerState) {
-        when (timerState) {
-            TimerState.Idle -> {
-                viewModel.apply {
-                    clockSizeModifier = 1.1f
-                    clockInitialStart = true
-                    clockStartResetAnimationRunning = true
-                }
-
-                timerService.apply {
-                    hState = viewModel.hPickerState
-                    minState = viewModel.minPickerState
-                    sState = viewModel.sPickerState
-                }
-
-                //progress bar animation that started when timer reset
-                animate(
-                    initialValue = viewModel.progressBarSweepAngle,
-                    targetValue = 0f,
-                    animationSpec = tween(
-                        durationMillis = MID_ANIMATION_DURATION,
-                        easing = LinearEasing
-                    )
-                ) { value, _ ->
-                    viewModel.progressBarSweepAngle = value
-                }
-
-                viewModel.clockStartResetAnimationRunning = false
-            }
-
-            TimerState.Running -> {
-                if (viewModel.clockInitialStart) {
-                    viewModel.apply {
-                        clockSizeModifier = 1.4f
-                        clockInitialStart = false
-
-                        hPickerState = timerService.hState
-                        minPickerState = timerService.minState
-                        sPickerState = timerService.sState
-
-                        clockStartResetAnimationRunning = true
-                    }
-
-                    //progress bar animation that started when timer does
-                    animate(
-                        initialValue = viewModel.progressBarSweepAngle,
-                        targetValue = 360f,
-                        animationSpec = tween(
-                            durationMillis = animDurationValue,
-                            easing = LinearEasing
-                        )
-                    ) { value, _ ->
-                        viewModel.progressBarSweepAngle = value
-                    }
-
-                    viewModel.clockStartResetAnimationRunning = false
-                }
-                //progress bar animation that running with timer
-                animate(
-                    initialValue = viewModel.progressBarSweepAngle,
-                    targetValue = 0f,
-                    animationSpec = tween(
-                        durationMillis = timerService.duration.inWholeMilliseconds.toInt(),
-                        easing = LinearEasing
-                    )
-                ) { value, _ ->
-                    viewModel.progressBarSweepAngle = value
-                }
-            }
-
-            TimerState.Paused -> {
-                viewModel.progressBarSweepAngleTarget = viewModel.progressBarSweepAngle
-            }
-
-            TimerState.Ringing -> {
-                viewModel.apply {
-                    progressBarSweepAngleTarget = 0f
-                    progressBarSweepAngleTarget = 360f
-                }
-            }
-
-            else -> {}
-        }
+        onTimerStateChanged()
     }
 
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(260.dp * sizeModifier.value),
+            .height(260.dp * sizeModifier),
         contentAlignment = Alignment.Center
     ) {
 
         Image(
             modifier = Modifier
-                .size(284.dp * sizeModifier.value)
-                .offset(y = 5.dp * sizeModifier.value),
+                .size(284.dp * sizeModifier)
+                .offset(y = 5.dp * sizeModifier),
             painter = painterResource(id = R.drawable.bottom_circle),
             contentScale = ContentScale.Crop,
             contentDescription = null
@@ -182,49 +95,51 @@ fun Clock(
 
         ProgressBar(
             sweepAngle = viewModel.progressBarSweepAngle,
-            diameter = 210f * sizeModifier.value,//210
-            sizeModifier = sizeModifier.value
+            diameter = 210f * sizeModifier,//210
+            sizeModifier = sizeModifier
         )
 
         Image(
             modifier = Modifier
-                .size(200.dp * sizeModifier.value)
-                .offset(x = 5.dp * sizeModifier.value, y = 12.dp * sizeModifier.value),
+                .size(200.dp * sizeModifier)
+                .offset(x = 5.dp * sizeModifier, y = 12.dp * sizeModifier),
             painter = painterResource(id = R.drawable.mid_circle_group),
             contentScale = ContentScale.Crop,
             contentDescription = null
         )
 
         Indicator(
-            modifier = Modifier.offset(y = (-76f * sizeModifier.value).dp),
+            modifier = Modifier.offset(y = (-76f * sizeModifier).dp),
             sweepAngle = viewModel.progressBarSweepAngle,
-            sizeModifier = sizeModifier.value
+            sizeModifier = sizeModifier
         )
 
         Image(
             modifier = Modifier
-                .size(160.dp * sizeModifier.value)
-                .offset(x = 10.dp * sizeModifier.value, y = 10.dp * sizeModifier.value),
+                .size(160.dp * sizeModifier)
+                .offset(x = 10.dp * sizeModifier, y = 10.dp * sizeModifier),
             painter = painterResource(id = R.drawable.top_circle),
             contentScale = ContentScale.Crop,
             contentDescription = null
         )
 
-        TimerNumbers(timerService = timerService, sizeModifier = sizeModifier.value)
+        timerNumbers()
     }
 }
 
 @Composable
-fun TimerNumbers(timerService: TimerService, sizeModifier: Float) {
-    val isHourVisible = timerService.hState != 0
-    val timerState = timerService.timerState
-    val hours = timerService.hState.absPad()
-    val minutes = timerService.minState.absPad()
-    val seconds = timerService.sState.absPad()
-
-    val overtimeMins = timerService.overtimeMins.absPad()
-    val overtimeSecs = timerService.overtimeSecs.absPad()
-    val overtimeMillis = timerService.getOvertimeMillis()
+fun TimerNumbers(
+    timerState: TimerState,
+    hours: Int,
+    minutes: Int,
+    seconds: Int,
+    showOvertime: Boolean = false,
+    overtimeMins: Int = 0,
+    overtimeSecs: Int = 0,
+    overtimeMillis: Int = 0,
+    sizeModifier: Float
+) {
+    val isHourVisible = hours != 0
 
     Box(
         modifier = Modifier
@@ -269,7 +184,7 @@ fun TimerNumbers(timerService: TimerService, sizeModifier: Float) {
             fontSize = if (isHourVisible) (16f * sizeModifier).sp else (20f * sizeModifier).sp//16//20
         )
 
-        if (timerService.showOvertime) {
+        if (showOvertime) {
             Text(
                 modifier = Modifier
                     .align(Alignment.BottomStart)

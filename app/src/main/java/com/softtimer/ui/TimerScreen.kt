@@ -1,9 +1,8 @@
 package com.softtimer.ui
 
-import android.content.Intent
-import android.util.Log
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animate
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -17,14 +16,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.rememberCompositionContext
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,7 +31,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.constraintlayout.compose.ConstraintLayout
 import com.airbnb.lottie.compose.LottieAnimation
 import com.airbnb.lottie.compose.LottieCompositionSpec
@@ -46,24 +41,29 @@ import com.softtimer.TimerViewModel
 import com.softtimer.service.ServiceHelper
 import com.softtimer.service.TimerService
 import com.softtimer.service.TimerState
-import com.softtimer.ui.theme.MID_ANIMATION_DELAY
 import com.softtimer.ui.theme.MID_ANIMATION_DURATION
 import com.softtimer.ui.theme.SHORT_ANIMATION_DURATION
 import com.softtimer.ui.theme.SoftTImerTheme
 import com.softtimer.util.Constants.ACTION_SERVICE_RESET
 import com.softtimer.util.Constants.ACTION_SERVICE_START
 import com.softtimer.util.Constants.ACTION_SERVICE_STOP
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import kotlin.time.Duration
 
 private const val TAG = "TimerScreen"
 
 @Composable
 fun TimerScreen(
     timerService: TimerService,
-    viewModel: TimerViewModel
+    viewModel: TimerViewModel,
+    activity: MainActivity,
 ) {
+    val clockSizeModifier by animateFloatAsState(
+        targetValue = viewModel.clockSizeModifier,
+        animationSpec = tween(
+            durationMillis = MID_ANIMATION_DURATION,
+            easing = LinearEasing
+        )
+    )
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -92,9 +92,22 @@ fun TimerScreen(
                     start.linkTo(parent.start)
                     end.linkTo(parent.end)
                 },
-                timerService = timerService,
-                viewModel = viewModel
-            )
+                viewModel = viewModel,
+                sizeModifier = clockSizeModifier,
+                timerState = timerService.timerState,
+                timerNumbers = {
+                    TimerNumbers(
+                        timerState = timerService.timerState,
+                        hours = timerService.hState,
+                        minutes = timerService.minState,
+                        seconds = timerService.sState,
+                        sizeModifier = clockSizeModifier
+                    )
+                }
+            ) {
+                viewModel.animateClockByTimerState(timerService = timerService)
+            }
+
 
             PickerSection(
                 modifier = Modifier.constrainAs(picker) {
@@ -111,7 +124,8 @@ fun TimerScreen(
         ActionsSection(
             modifier = Modifier.align(Alignment.BottomCenter),
             timerService = timerService,
-            viewModel = viewModel
+            viewModel = viewModel,
+            activity = activity
         )
     }
 }
@@ -120,7 +134,8 @@ fun TimerScreen(
 fun ActionsSection(
     modifier: Modifier = Modifier,
     viewModel: TimerViewModel,
-    timerService: TimerService
+    timerService: TimerService,
+    activity: MainActivity
 ) {
     val context = LocalContext.current
     val timerState = timerService.timerState
@@ -134,7 +149,6 @@ fun ActionsSection(
         RestartButton(
             size = if (timerState == TimerState.Ringing) 90.dp else 50.dp,
         ) {
-            Log.d(TAG, "duration, ${timerService.duration}")
             if (
                 timerState == TimerState.Running ||
                 timerState == TimerState.Paused ||
@@ -146,6 +160,7 @@ fun ActionsSection(
                     action = ACTION_SERVICE_RESET
                 )
                 viewModel.secondReset = true
+
             } else if (timerState == TimerState.Idle) {
                 viewModel.apply {
                     hPickerState = 0
@@ -159,7 +174,6 @@ fun ActionsSection(
                     showOvertime = false
                 }
             }
-
         }
 
         if (timerState != TimerState.Ringing) {

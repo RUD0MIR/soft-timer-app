@@ -11,11 +11,14 @@ import android.media.RingtoneManager
 import android.os.Binder
 import android.os.Build
 import android.os.PowerManager
+import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.app.NotificationCompat
+import com.softtimer.ExpiredActivity
 import com.softtimer.MainActivity
+import com.softtimer.util.Constants
 import com.softtimer.util.Constants.ACTION_SERVICE_RESET
 import com.softtimer.util.Constants.ACTION_SERVICE_START
 import com.softtimer.util.Constants.ACTION_SERVICE_STOP
@@ -72,9 +75,13 @@ class TimerService : Service() {
     var minState by mutableStateOf(0)
     var sState by mutableStateOf(0)
 
+    lateinit var powerManager: PowerManager
+    var isScreenOffWhenTimeExpired = false
+
     override fun onCreate() {
         super.onCreate()
         ringtone = RingtoneManager.getRingtone(applicationContext, alarmSoundUri)
+        powerManager = getSystemService(POWER_SERVICE) as PowerManager
     }
 
     override fun onBind(p0: Intent?) = binder
@@ -213,11 +220,10 @@ class TimerService : Service() {
         ringtone.play()
         showOvertime = true
 
-        val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
-        val isScreenOff = !powerManager.isInteractive
+        isScreenOffWhenTimeExpired = !powerManager.isInteractive
 
-        if (isScreenOff) {
-            Intent(applicationContext, MainActivity::class.java).apply {
+        if (isScreenOffWhenTimeExpired) {
+            Intent(applicationContext, ExpiredActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK
                 startActivity(this)
             }

@@ -37,11 +37,13 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewModelScope
 import com.softtimer.R
 import com.softtimer.TimerViewModel
 import com.softtimer.repository.DataStoreKeys
 import com.softtimer.service.TimerService
 import com.softtimer.service.TimerState
+import com.softtimer.timerService
 import com.softtimer.ui.theme.Black
 import com.softtimer.ui.theme.Blue
 import com.softtimer.ui.theme.BlueFlash
@@ -52,10 +54,12 @@ import com.softtimer.ui.theme.SoftTImerTheme
 import com.softtimer.ui.theme.LightBlue
 import com.softtimer.ui.theme.MID_ANIMATION_DURATION
 import com.softtimer.ui.theme.MidBlue
+import com.softtimer.util.Constants
 import com.softtimer.util.Constants.CLOCK_MAX_SIZE
 import com.softtimer.util.Constants.CLOCK_MIN_SIZE
 import com.softtimer.util.absPad
 import com.softtimer.util.arcShadow
+import kotlinx.coroutines.launch
 import kotlin.math.sin
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
@@ -67,63 +71,150 @@ private const val TAG = "Clock1"
 @Composable
 fun Clock(
     modifier: Modifier = Modifier,
-    viewModel: TimerViewModel,
-    sizeModifier: Float,
-    timerState: TimerState,
-    timerNumbers: @Composable (() -> Unit),
-    onTimerStateChanged: () -> Unit
+    clockSize: Float,
+    onClockSizeChanged: (Float) -> Unit,
+    onClockAnimationStateChanged: (Boolean) -> Unit,
+    onClockInitialStart: () -> Unit
 ) {
+    var clockInitialStart by rememberSaveable { mutableStateOf(true) }
+    var progressBarSweepAngleTarget by rememberSaveable { mutableStateOf(360f) }
+    var progressBarSweepAngle by rememberSaveable { mutableStateOf(0f) }
+    var showOvertime by rememberSaveable{ mutableStateOf(false) }
+
+    val clockSizeModifier by animateFloatAsState(
+        targetValue = clockSize,
+        animationSpec = tween(
+            durationMillis = MID_ANIMATION_DURATION,
+            easing = LinearEasing
+        )
+    )
+
+    val timerState = timerService.timerState
+
     LaunchedEffect(key1 = timerState) {
-        onTimerStateChanged()
+        when (timerState) {
+            TimerState.Idle -> {
+                onClockSizeChanged(CLOCK_MIN_SIZE)
+                clockInitialStart = true
+                animate(
+                    initialValue = progressBarSweepAngle,
+                    targetValue = 0f,
+                    animationSpec = tween(
+                        durationMillis = MID_ANIMATION_DURATION,
+                        easing = LinearEasing
+                    )
+                ) { value, _ ->
+                    progressBarSweepAngle = value
+                }
+                onClockAnimationStateChanged(false)
+            }
+
+            TimerState.Running -> {
+                if (clockInitialStart) {
+                    onClockSizeChanged(CLOCK_MAX_SIZE)
+                    clockInitialStart = false
+                    showOvertime = false
+
+                    onClockInitialStart()
+
+                    onClockAnimationStateChanged(true)
+
+                    //progress bar animation that started when timer does
+                    animate(
+                        initialValue = progressBarSweepAngle,
+                        targetValue = 360f,
+                        animationSpec = tween(
+                            durationMillis = MID_ANIMATION_DURATION,
+                            easing = LinearEasing
+                        )
+                    ) { value, _ ->
+                        progressBarSweepAngle = value
+                    }
+
+                    onClockAnimationStateChanged(false)
+                }
+                //progress bar animation that running with timer
+                animate(
+                    initialValue = progressBarSweepAngle,
+                    targetValue = 0f,
+                    animationSpec = tween(
+                        durationMillis = com.softtimer.timerService.duration.inWholeMilliseconds.toInt(),
+                        easing = LinearEasing
+                    )
+                ) { value, _ ->
+                    progressBarSweepAngle = value
+                }
+            }
+
+            TimerState.Paused -> {
+                progressBarSweepAngleTarget = progressBarSweepAngle
+            }
+
+            TimerState.Ringing -> {
+                showOvertime = true
+                progressBarSweepAngleTarget = 0f
+                progressBarSweepAngleTarget = 360f
+
+            }
+
+            else -> {}
+        }
     }
 
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(260.dp * sizeModifier),
+            .height(260.dp * clockSizeModifier),
         contentAlignment = Alignment.Center
     ) {
 
         Image(
             modifier = Modifier
-                .size(284.dp * sizeModifier)
-                .offset(y = 5.dp * sizeModifier),
+                .size(284.dp * clockSizeModifier)
+                .offset(y = 5.dp * clockSizeModifier),
             painter = painterResource(id = R.drawable.bottom_circle),
             contentScale = ContentScale.Crop,
             contentDescription = null
         )
 
         ProgressBar(
-            sweepAngle = viewModel.progressBarSweepAngle,
-            diameter = 210f * sizeModifier,//210
-            sizeModifier = sizeModifier
+            sweepAngle = progressBarSweepAngle,
+            diameter = 210f * clockSizeModifier,//210
+            sizeModifier = clockSizeModifier
         )
 
         Image(
             modifier = Modifier
-                .size(200.dp * sizeModifier)
-                .offset(x = 5.dp * sizeModifier, y = 12.dp * sizeModifier),
+                .size(200.dp * clockSizeModifier)
+                .offset(x = 5.dp * clockSizeModifier, y = 12.dp * clockSizeModifier),
             painter = painterResource(id = R.drawable.mid_circle_group),
             contentScale = ContentScale.Crop,
             contentDescription = null
         )
 
         Indicator(
-            modifier = Modifier.offset(y = (-76f * sizeModifier).dp),
-            sweepAngle = viewModel.progressBarSweepAngle,
-            sizeModifier = sizeModifier
+            modifier = Modifier.offset(y = (-76f * clockSizeModifier).dp),
+            sweepAngle = progressBarSweepAngle,
+            sizeModifier = clockSizeModifier
         )
 
         Image(
             modifier = Modifier
-                .size(160.dp * sizeModifier)
-                .offset(x = 10.dp * sizeModifier, y = 10.dp * sizeModifier),
+                .size(160.dp * clockSizeModifier)
+                .offset(x = 10.dp * clockSizeModifier, y = 10.dp * clockSizeModifier),
             painter = painterResource(id = R.drawable.top_circle),
             contentScale = ContentScale.Crop,
             contentDescription = null
         )
 
-        timerNumbers()
+        TimerNumbers(
+            timerState = timerService.timerState,
+            hours = timerService.hState,
+            minutes = timerService.minState,
+            seconds = timerService.sState,
+            showOvertime = showOvertime,
+            sizeModifier = clockSizeModifier
+        )
     }
 }
 
@@ -140,6 +231,9 @@ fun TimerNumbers(
     sizeModifier: Float
 ) {
     val isHourVisible = hours != 0
+    val padHours = hours.absPad()
+    val padMinutes = minutes.absPad()
+    val padSeconds = seconds.absPad()
 
     Box(
         modifier = Modifier
@@ -154,10 +248,10 @@ fun TimerNumbers(
                 "00:00"
             } else {
                 buildString {
-                    if (isHourVisible) append("${hours}:")
-                    append(minutes)
+                    if (isHourVisible) append("${padHours}:")
+                    append(padMinutes)
                     append(":")
-                    append(seconds)
+                    append(padSeconds)
                 }
             },
             fontFamily = Orbitron,
@@ -173,10 +267,10 @@ fun TimerNumbers(
                 "00:00"
             } else {
                 buildString {
-                    if (isHourVisible) append("${hours}:")
-                    append(minutes)
+                    if (isHourVisible) append("${padHours}:")
+                    append(padMinutes)
                     append(":")
-                    append(seconds)
+                    append(padSeconds)
                 }
             },
             fontFamily = Orbitron,

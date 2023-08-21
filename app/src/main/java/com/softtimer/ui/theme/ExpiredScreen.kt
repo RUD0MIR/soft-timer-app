@@ -9,11 +9,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
 import com.softtimer.ExpiredActivity
 import com.softtimer.TimerViewModel
 import com.softtimer.service.TimerService
+import com.softtimer.timerService
 import com.softtimer.ui.ActionsSection
 import com.softtimer.ui.Clock
 import com.softtimer.ui.RestartButton
@@ -41,37 +43,51 @@ fun ExpiredScreen(
             .padding(bottom = 64.dp),
         contentAlignment = Alignment.Center
     ) {
-        ConstraintLayout(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
         ) {
-            val (clock) = createRefs()
-            val topGuideLine = createGuidelineFromTop(fraction = 0.16f)
-
             Clock(
-                modifier = Modifier.constrainAs(clock) {
-                    top.linkTo(topGuideLine)
-                    start.linkTo(parent.start)
-                    end.linkTo(parent.end)
-                },
-                viewModel = viewModel,
-                timerState = timerService.timerState,
-                sizeModifier = CLOCK_MAX_SIZE,
-                timerNumbers = {
-                    TimerNumbers(
-                        timerState = timerService.timerState,
-                        hours = timerService.hState,
-                        minutes = timerService.minState,
-                        seconds = timerService.sState,
-                        sizeModifier = CLOCK_MAX_SIZE
-                    )
-                },
-                onTimerStateChanged = {}
+                clockSize = CLOCK_MAX_SIZE,
+                onClockSizeChanged = {},
+                onClockAnimationStateChanged = {},
+                onClockInitialStart = {}
             )
         }
 
         RestartButton(size = 90.dp) {
             activity.finish()
+        }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun TimerScreenPreview() {
+    SoftTImerTheme {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    color = Color.Red
+                )
+                .padding(bottom = 64.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+            ) {
+                Clock(
+                    clockSize = CLOCK_MAX_SIZE,
+                    onClockSizeChanged = {},
+                    onClockAnimationStateChanged = {},
+                    onClockInitialStart = {}
+                )
+            }
+
+            RestartButton(size = 90.dp) {
+            }
         }
     }
 }

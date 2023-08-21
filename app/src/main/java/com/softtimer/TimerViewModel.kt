@@ -24,11 +24,7 @@ private const val TAG = "TimerViewModel"
 
 class TimerViewModel(application: Application) : AndroidViewModel(application) {
     //variables for Clock.kt
-    var clockInitialStart by mutableStateOf(true)
-    var progressBarSweepAngleTarget by mutableStateOf(360f)
-    var progressBarSweepAngle by mutableStateOf(0f)
-    var clockSizeModifier by mutableStateOf(1.1f)
-    var clockStartResetAnimationRunning by mutableStateOf(false)
+
 
     //variables for PickerSection.kt
     var pickerVisibilityValue by mutableStateOf(1f)
@@ -40,89 +36,6 @@ class TimerViewModel(application: Application) : AndroidViewModel(application) {
     var sPickerState by mutableStateOf(0)
 
     var secondReset by mutableStateOf(false)
-
-    fun animateClockByTimerState(timerService: TimerService) {
-        val timerState = timerService.timerState
-        viewModelScope.launch {
-            when (timerState) {
-                TimerState.Idle -> {
-                    clockSizeModifier = Constants.CLOCK_MIN_SIZE
-                    clockInitialStart = true
-                    clockStartResetAnimationRunning = true
-
-                    timerService.apply {
-                        hState = hPickerState
-                        minState = minPickerState
-                        sState = sPickerState
-                    }
-                    //progress bar animation that started when timer reset
-                    animate(
-                        initialValue = progressBarSweepAngle,
-                        targetValue = 0f,
-                        animationSpec = tween(
-                            durationMillis = MID_ANIMATION_DURATION,
-                            easing = LinearEasing
-                        )
-                    ) { value, _ ->
-                        progressBarSweepAngle = value
-                    }
-
-                    clockStartResetAnimationRunning = false
-                }
-
-                TimerState.Running -> {
-                    if (clockInitialStart) {
-                        clockSizeModifier = Constants.CLOCK_MAX_SIZE
-                        clockInitialStart = false
-
-                        hPickerState = timerService.hState
-                        minPickerState = timerService.minState
-                        sPickerState = timerService.sState
-
-                        clockStartResetAnimationRunning = true
-
-
-                        //progress bar animation that started when timer does
-                        animate(
-                            initialValue = progressBarSweepAngle,
-                            targetValue = 360f,
-                            animationSpec = tween(
-                                durationMillis = MID_ANIMATION_DURATION,
-                                easing = LinearEasing
-                            )
-                        ) { value, _ ->
-                            progressBarSweepAngle = value
-                        }
-
-                        clockStartResetAnimationRunning = false
-                    }
-                    //progress bar animation that running with timer
-                    animate(
-                        initialValue = progressBarSweepAngle,
-                        targetValue = 0f,
-                        animationSpec = tween(
-                            durationMillis = timerService.duration.inWholeMilliseconds.toInt(),
-                            easing = LinearEasing
-                        )
-                    ) { value, _ ->
-                        progressBarSweepAngle = value
-                    }
-                }
-
-                TimerState.Paused -> {
-                    progressBarSweepAngleTarget = progressBarSweepAngle
-                }
-
-                TimerState.Ringing -> {
-                    progressBarSweepAngleTarget = 0f
-                    progressBarSweepAngleTarget = 360f
-
-                }
-
-                else -> {}
-            }
-        }
-    }
 
     private val repository = DataStoreRepository(application)
 

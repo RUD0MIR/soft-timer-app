@@ -21,6 +21,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -44,9 +45,11 @@ import com.softtimer.service.TimerState
 import com.softtimer.ui.theme.MID_ANIMATION_DURATION
 import com.softtimer.ui.theme.SHORT_ANIMATION_DURATION
 import com.softtimer.ui.theme.SoftTImerTheme
+import com.softtimer.util.Constants
 import com.softtimer.util.Constants.ACTION_SERVICE_RESET
 import com.softtimer.util.Constants.ACTION_SERVICE_START
 import com.softtimer.util.Constants.ACTION_SERVICE_STOP
+import com.softtimer.util.Constants.CLOCK_MIN_SIZE
 
 private const val TAG = "TimerScreen"
 
@@ -56,14 +59,8 @@ fun TimerScreen(
     viewModel: TimerViewModel,
     activity: MainActivity,
 ) {
-    val clockSizeModifier by animateFloatAsState(
-        targetValue = viewModel.clockSizeModifier,
-        animationSpec = tween(
-            durationMillis = MID_ANIMATION_DURATION,
-            easing = LinearEasing
-        )
-    )
-
+    var clockStartResetAnimationRunning by rememberSaveable { mutableStateOf(false) }
+    var clockSize by remember { mutableStateOf(CLOCK_MIN_SIZE) }
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -92,20 +89,13 @@ fun TimerScreen(
                     start.linkTo(parent.start)
                     end.linkTo(parent.end)
                 },
-                viewModel = viewModel,
-                sizeModifier = clockSizeModifier,
-                timerState = timerService.timerState,
-                timerNumbers = {
-                    TimerNumbers(
-                        timerState = timerService.timerState,
-                        hours = timerService.hState,
-                        minutes = timerService.minState,
-                        seconds = timerService.sState,
-                        sizeModifier = clockSizeModifier
-                    )
-                }
+                clockSize = clockSize,
+                onClockSizeChanged = {clockSize = it},
+                onClockAnimationStateChanged = { clockStartResetAnimationRunning = it }
             ) {
-                viewModel.animateClockByTimerState(timerService = timerService)
+                viewModel.hPickerState = timerService.hState
+                viewModel.minPickerState = timerService.minState
+                viewModel.sPickerState = timerService.sState
             }
 
 
@@ -125,7 +115,8 @@ fun TimerScreen(
             modifier = Modifier.align(Alignment.BottomCenter),
             timerService = timerService,
             viewModel = viewModel,
-            activity = activity
+            activity = activity,
+            clockStartResetAnimationRunning = clockStartResetAnimationRunning
         )
     }
 }
@@ -134,6 +125,7 @@ fun TimerScreen(
 fun ActionsSection(
     modifier: Modifier = Modifier,
     viewModel: TimerViewModel,
+    clockStartResetAnimationRunning: Boolean,
     timerService: TimerService,
     activity: MainActivity
 ) {
@@ -153,7 +145,7 @@ fun ActionsSection(
                 timerState == TimerState.Running ||
                 timerState == TimerState.Paused ||
                 timerState == TimerState.Ringing &&
-                !viewModel.clockStartResetAnimationRunning
+                !clockStartResetAnimationRunning
             ) {
                 ServiceHelper.triggerForegroundService(
                     context = context,
@@ -181,7 +173,7 @@ fun ActionsSection(
                 size = 90.dp,
                 timerState = timerState
             ) {
-                if (!viewModel.clockStartResetAnimationRunning) {
+                if (!clockStartResetAnimationRunning) {
                     ServiceHelper.triggerForegroundService(
                         context = context,
                         action = if (timerState == TimerState.Running) ACTION_SERVICE_STOP

@@ -56,11 +56,16 @@ private const val TAG = "TimerScreen"
 @Composable
 fun TimerScreen(
     timerService: TimerService,
-    viewModel: TimerViewModel,
-    activity: MainActivity,
 ) {
     var clockStartResetAnimationRunning by rememberSaveable { mutableStateOf(false) }
     var clockSize by remember { mutableStateOf(CLOCK_MIN_SIZE) }
+    var hPickerState by remember { mutableStateOf(0) }
+    var minPickerState by remember { mutableStateOf(0) }
+    var sPickerState by remember { mutableStateOf(0) }
+//    var secondReset by remember { mutableStateOf(false) }
+    val timerState = timerService.timerState
+    val context = LocalContext.current
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -93,11 +98,10 @@ fun TimerScreen(
                 onClockSizeChanged = {clockSize = it},
                 onClockAnimationStateChanged = { clockStartResetAnimationRunning = it }
             ) {
-                viewModel.hPickerState = timerService.hState
-                viewModel.minPickerState = timerService.minState
-                viewModel.sPickerState = timerService.sState
+                hPickerState = timerService.hState
+                minPickerState = timerService.minState
+                sPickerState = timerService.sState
             }
-
 
             PickerSection(
                 modifier = Modifier.constrainAs(picker) {
@@ -106,17 +110,66 @@ fun TimerScreen(
                     end.linkTo(parent.end)
                     bottom.linkTo(bottomGuideLine, margin = 18.dp)
                 },
-                timerService = timerService,
-                viewModel = viewModel
+                timerState = timerService.timerState,
+                hValue = hPickerState,
+                minValue = minPickerState,
+                sValue = sPickerState,
+                onHPickerStateChanged = { selectedHour ->
+                    timerService.hState = selectedHour
+                    hPickerState = selectedHour
+                },
+                onMinPickerStateChanged = { selectedMin ->
+                    timerService.minState = selectedMin
+                    minPickerState = selectedMin
+                },
+                onSecPickerStateChanged = {selectedSec ->
+                    timerService.sState = selectedSec
+                    sPickerState = selectedSec
+                }
             )
         }
 
         ActionsSection(
             modifier = Modifier.align(Alignment.BottomCenter),
-            timerService = timerService,
-            viewModel = viewModel,
-            activity = activity,
-            clockStartResetAnimationRunning = clockStartResetAnimationRunning
+            timerState = timerState,
+            onButtonResetClick = {
+                if (
+                    timerState == TimerState.Running ||
+                    timerState == TimerState.Paused ||
+                    timerState == TimerState.Ringing &&
+                    !clockStartResetAnimationRunning
+                ) {
+                    ServiceHelper.triggerForegroundService(
+                        context = context,
+                        action = ACTION_SERVICE_RESET
+                    )
+                    timerService.secondReset = true
+
+                } else if (timerState == TimerState.Idle) {
+                        hPickerState = 0
+                        minPickerState = 0
+                        sPickerState = 0
+
+                    timerService.apply {
+                        hState = 0
+                        minState = 0
+                        sState = 0
+                        showOvertime = false
+                    }
+                }
+            },
+            onButtonPlayPauseClick = {
+                if (!clockStartResetAnimationRunning) {
+                    ServiceHelper.triggerForegroundService(
+                        context = context,
+                        action = if (timerState == TimerState.Running) ACTION_SERVICE_STOP
+                        else ACTION_SERVICE_START
+                    )
+                }
+            },
+            onButtonThemeClick = {
+                //TODO change theme
+            }
         )
     }
 }
@@ -124,14 +177,11 @@ fun TimerScreen(
 @Composable
 fun ActionsSection(
     modifier: Modifier = Modifier,
-    viewModel: TimerViewModel,
-    clockStartResetAnimationRunning: Boolean,
-    timerService: TimerService,
-    activity: MainActivity
+    timerState: TimerState,
+    onButtonResetClick: () -> Unit,
+    onButtonPlayPauseClick: () -> Unit,
+    onButtonThemeClick: () -> Unit,
 ) {
-    val context = LocalContext.current
-    val timerState = timerService.timerState
-
     Row(
         modifier.fillMaxWidth(0.9f),
         verticalAlignment = Alignment.CenterVertically,
@@ -141,31 +191,7 @@ fun ActionsSection(
         RestartButton(
             size = if (timerState == TimerState.Ringing) 90.dp else 50.dp,
         ) {
-            if (
-                timerState == TimerState.Running ||
-                timerState == TimerState.Paused ||
-                timerState == TimerState.Ringing &&
-                !clockStartResetAnimationRunning
-            ) {
-                ServiceHelper.triggerForegroundService(
-                    context = context,
-                    action = ACTION_SERVICE_RESET
-                )
-                viewModel.secondReset = true
-
-            } else if (timerState == TimerState.Idle) {
-                viewModel.apply {
-                    hPickerState = 0
-                    minPickerState = 0
-                    sPickerState = 0
-                }
-                timerService.apply {
-                    hState = 0
-                    minState = 0
-                    sState = 0
-                    showOvertime = false
-                }
-            }
+            onButtonResetClick()
         }
 
         if (timerState != TimerState.Ringing) {
@@ -173,17 +199,11 @@ fun ActionsSection(
                 size = 90.dp,
                 timerState = timerState
             ) {
-                if (!clockStartResetAnimationRunning) {
-                    ServiceHelper.triggerForegroundService(
-                        context = context,
-                        action = if (timerState == TimerState.Running) ACTION_SERVICE_STOP
-                        else ACTION_SERVICE_START
-                    )
-                }
+                onButtonPlayPauseClick()
             }
 
             ThemeButton(size = 50.dp) {
-                //TODO change theme
+                onButtonThemeClick()
             }
         }
     }
@@ -329,9 +349,7 @@ fun PlayPauseButton(
             progress = { progress }
         )
     }
-
 }
-
 
 @Composable
 fun ThemeButton(

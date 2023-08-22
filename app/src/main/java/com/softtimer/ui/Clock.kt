@@ -1,6 +1,5 @@
 package com.softtimer.ui
 
-import android.util.Log
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.animateFloatAsState
@@ -9,13 +8,11 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -37,11 +34,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewModelScope
 import com.softtimer.R
-import com.softtimer.TimerViewModel
-import com.softtimer.repository.DataStoreKeys
-import com.softtimer.service.TimerService
 import com.softtimer.service.TimerState
 import com.softtimer.timerService
 import com.softtimer.ui.theme.Black
@@ -54,17 +47,12 @@ import com.softtimer.ui.theme.SoftTImerTheme
 import com.softtimer.ui.theme.LightBlue
 import com.softtimer.ui.theme.MID_ANIMATION_DURATION
 import com.softtimer.ui.theme.MidBlue
-import com.softtimer.util.Constants
 import com.softtimer.util.Constants.CLOCK_MAX_SIZE
 import com.softtimer.util.Constants.CLOCK_MIN_SIZE
 import com.softtimer.util.absPad
 import com.softtimer.util.arcShadow
-import kotlinx.coroutines.launch
+import com.softtimer.util.calculateShadowXOffset
 import kotlin.math.sin
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.hours
-import kotlin.time.Duration.Companion.minutes
-import kotlin.time.Duration.Companion.seconds
 
 private const val TAG = "Clock1"
 
@@ -207,33 +195,44 @@ fun Clock(
             contentDescription = null
         )
 
-        TimerNumbers(
-            timerState = timerService.timerState,
-            hours = timerService.hState,
-            minutes = timerService.minState,
-            seconds = timerService.sState,
-            showOvertime = showOvertime,
-            sizeModifier = clockSizeModifier
-        )
+        if(showOvertime) {
+            TimerNumbers(
+                timerState = timerService.timerState,
+                hours = timerService.hState.absPad(),
+                minutes = timerService.minState.absPad(),
+                seconds = timerService.sState.absPad(),
+                showOvertime = showOvertime,
+                overtimeMins = timerService.overtimeMins.absPad(),
+                overtimeSecs = timerService.overtimeSecs.absPad(),
+                overtimeMillis = timerService.getOvertimeMillis(),
+                sizeModifier = clockSizeModifier
+            )
+        } else {
+            TimerNumbers(
+                timerState = timerService.timerState,
+                hours = timerService.hState.absPad(),
+                minutes = timerService.minState.absPad(),
+                seconds = timerService.sState.absPad(),
+                showOvertime = showOvertime,
+                sizeModifier = clockSizeModifier
+            )
+        }
     }
 }
 
 @Composable
 fun TimerNumbers(
     timerState: TimerState,
-    hours: Int,
-    minutes: Int,
-    seconds: Int,
+    hours: String,
+    minutes: String,
+    seconds: String,
     showOvertime: Boolean = false,
-    overtimeMins: Int = 0,
-    overtimeSecs: Int = 0,
-    overtimeMillis: Int = 0,
+    overtimeMins: String = "00",
+    overtimeSecs: String = "00",
+    overtimeMillis: String = "00",
     sizeModifier: Float
 ) {
-    val isHourVisible = hours != 0
-    val padHours = hours.absPad()
-    val padMinutes = minutes.absPad()
-    val padSeconds = seconds.absPad()
+    val isHourVisible = hours != "00"
 
     Box(
         modifier = Modifier
@@ -248,10 +247,10 @@ fun TimerNumbers(
                 "00:00"
             } else {
                 buildString {
-                    if (isHourVisible) append("${padHours}:")
-                    append(padMinutes)
+                    if (isHourVisible) append("${hours}:")
+                    append(minutes)
                     append(":")
-                    append(padSeconds)
+                    append(seconds)
                 }
             },
             fontFamily = Orbitron,
@@ -267,10 +266,10 @@ fun TimerNumbers(
                 "00:00"
             } else {
                 buildString {
-                    if (isHourVisible) append("${padHours}:")
-                    append(padMinutes)
+                    if (isHourVisible) append("${hours}:")
+                    append(minutes)
                     append(":")
-                    append(padSeconds)
+                    append(seconds)
                 }
             },
             fontFamily = Orbitron,
@@ -439,31 +438,6 @@ fun Indicator(modifier: Modifier = Modifier, sweepAngle: Float, sizeModifier: Fl
                 )
         )
     }
-}
-
-fun calculateShadowXOffset(
-    sweepAngle: Float,
-    minOffset: Float,
-    maxOffset: Float,
-    lightSourceOffset: Float
-): Float {
-    val totalCircle = 360f
-
-    // Calculate the angle difference between the light source and the current sweep angle
-    val angleDifference = sweepAngle - lightSourceOffset
-
-    // Normalize the angle difference
-    val normalizedAngle = (angleDifference + totalCircle) % totalCircle
-
-    // Calculate the offset based on the normalized angle
-    val offset = (10f * sin(Math.toRadians(normalizedAngle.toDouble()))).toFloat()
-
-    // Apply the minimum and maximum offset
-    var finalOffset: Float
-    finalOffset = if (offset < minOffset) minOffset else offset
-    finalOffset = if (offset > maxOffset) maxOffset else offset
-
-    return finalOffset
 }
 
 @Preview(showBackground = true)

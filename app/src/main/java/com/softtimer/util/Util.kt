@@ -18,6 +18,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlin.math.abs
+import kotlin.math.sin
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -57,6 +58,31 @@ fun getDurationInSec(h: Int, min: Int, s: Int): Duration {
     val hInSec = h * 60 * 60
     val minInSec = min * 60
     return (hInSec + minInSec + s).seconds
+}
+
+fun calculateShadowXOffset(
+    sweepAngle: Float,
+    minOffset: Float,
+    maxOffset: Float,
+    lightSourceOffset: Float
+): Float {
+    val totalCircle = 360f
+
+    // Calculate the angle difference between the light source and the current sweep angle
+    val angleDifference = sweepAngle - lightSourceOffset
+
+    // Normalize the angle difference
+    val normalizedAngle = (angleDifference + totalCircle) % totalCircle
+
+    // Calculate the offset based on the normalized angle
+    val offset = (10f * sin(Math.toRadians(normalizedAngle.toDouble()))).toFloat()
+
+    // Apply the minimum and maximum offset
+    var finalOffset: Float
+    finalOffset = if (offset < minOffset) minOffset else offset
+    finalOffset = if (offset > maxOffset) maxOffset else offset
+
+    return finalOffset
 }
 
 @Composable

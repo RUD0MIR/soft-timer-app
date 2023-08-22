@@ -34,7 +34,7 @@ class ExpiredActivity : ComponentActivity() {
             }
         }
         setContent {
-            ExpiredScreen(timerService = timerService, viewModel = viewModel, activity = this)
+            ExpiredScreen(activity = this, timerService = timerService)
         }
     }
 }

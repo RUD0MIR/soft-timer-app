@@ -59,6 +59,7 @@ class TimerService : Service() {
     var duration: Duration = Duration.ZERO
 
     var showOvertime by mutableStateOf(false)
+    var secondReset by mutableStateOf(false)
 
     var overtimeDuration: Duration = Duration.ZERO
         private set

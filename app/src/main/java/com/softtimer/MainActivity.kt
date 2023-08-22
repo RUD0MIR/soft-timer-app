@@ -61,8 +61,6 @@ class MainActivity : ComponentActivity() {
                 if (isBound) {
                     TimerScreen(
                         timerService = timerService,
-                        viewModel = viewModel,
-                        activity = this
                     )
                 }
             }

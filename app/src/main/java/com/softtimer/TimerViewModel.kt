@@ -23,20 +23,6 @@ import kotlinx.coroutines.withContext
 private const val TAG = "TimerViewModel"
 
 class TimerViewModel(application: Application) : AndroidViewModel(application) {
-    //variables for Clock.kt
-
-
-    //variables for PickerSection.kt
-    var pickerVisibilityValue by mutableStateOf(1f)
-    var isVisible by mutableStateOf(true)
-
-    //variables for save last set time and show in NumberPicker when timer is reset
-    var hPickerState by mutableStateOf(0)
-    var minPickerState by mutableStateOf(0)
-    var sPickerState by mutableStateOf(0)
-
-    var secondReset by mutableStateOf(false)
-
     private val repository = DataStoreRepository(application)
 
     suspend fun <T> readFromDataStore(key: Preferences.Key<T>): Flow<T?> {

@@ -56,13 +56,19 @@ private const val TAG = "PickerSection"
 @Composable
 fun PickerSection(
     modifier: Modifier = Modifier,
-    timerService: TimerService,
-    viewModel: TimerViewModel
+    timerState: TimerState,
+    hValue: Int,
+    minValue: Int,
+    sValue: Int,
+    onHPickerStateChanged: (Int) -> Unit,
+    onMinPickerStateChanged: (Int) -> Unit,
+    onSecPickerStateChanged: (Int) -> Unit,
 ) {
-    val timerState = timerService.timerState
+    var pickerVisibilityValue by remember { mutableStateOf(1f) }
+    var isVisible by remember { mutableStateOf(true) }
 
     val pickerVisibility by animateFloatAsState(
-        targetValue = viewModel.pickerVisibilityValue,
+        targetValue = pickerVisibilityValue,
         animationSpec = tween(
             durationMillis = MID_ANIMATION_DURATION,
             easing = LinearEasing
@@ -72,21 +78,21 @@ fun PickerSection(
     LaunchedEffect(key1 = timerState) {
         when (timerState) {
             TimerState.Running -> {
-                viewModel.pickerVisibilityValue = 0f
+                pickerVisibilityValue = 0f
                 delay(MID_ANIMATION_DELAY)
-                viewModel.isVisible = false
+                isVisible = false
             }
 
             TimerState.Idle -> {
-                viewModel.isVisible = true
-                viewModel.pickerVisibilityValue = 1f
+                isVisible = true
+                pickerVisibilityValue = 1f
             }
 
             else -> {}
         }
     }
 
-    if (viewModel.isVisible) {
+    if (isVisible) {
         Box(
             contentAlignment = Alignment.Center,
             modifier = modifier
@@ -102,42 +108,35 @@ fun PickerSection(
                     modifier = Modifier
                         .offset(x = 14.dp)
                         .alpha(pickerVisibility),
-                    timerState = timerService.timerState,
-                    viewModel = viewModel,
                     range = getNumbersWithPad(1..24),
                     showDivider = true,
-                    pickerValue = viewModel.hPickerState,
+                    pickerValue = hValue,
                     name = "h"
-                ) { selectedItem ->
-                    timerService.hState = selectedItem
-                    viewModel.hPickerState = selectedItem
+                ) { selectedHour ->
+                    onHPickerStateChanged(selectedHour)
                 }
 
                 StyledNumberPicker(
                     modifier = Modifier.alpha(pickerVisibility),
-                    timerState = timerService.timerState,
-                    viewModel = viewModel,
                     range = getNumbersWithPad(1..59),
                     name = "min",
-                    pickerValue = viewModel.minPickerState,
+                    pickerValue = minValue,
                     showDivider = true,
-                ) { selectedItem ->
-                    timerService.minState = selectedItem
-                    viewModel.minPickerState = selectedItem
+                ) { selectedMin ->
+                    onMinPickerStateChanged(selectedMin)
+
                 }
 
                 StyledNumberPicker(
                     modifier = Modifier
                         .offset(x = (-14).dp)
                         .alpha(pickerVisibility),
-                    timerState = timerService.timerState,
-                    viewModel = viewModel,
                     range = getNumbersWithPad(1..59),
-                    pickerValue = viewModel.sPickerState,
+                    pickerValue = sValue,
                     name = "s"
-                ) { selectedItem ->
-                    timerService.sState = selectedItem
-                    viewModel.sPickerState = selectedItem
+                ) { selectedSec ->
+                    onSecPickerStateChanged(selectedSec)
+
                 }
             }
         }
@@ -147,9 +146,7 @@ fun PickerSection(
 @Composable
 fun StyledNumberPicker(
     modifier: Modifier = Modifier,
-    timerState: TimerState,
     range: List<String>,
-    viewModel: TimerViewModel,
     showDivider: Boolean = false,
     name: String,
     pickerValue: Int,

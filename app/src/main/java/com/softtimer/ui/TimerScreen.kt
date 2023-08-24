@@ -1,8 +1,8 @@
 package com.softtimer.ui
 
+import android.util.Log
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animate
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -36,20 +36,18 @@ import androidx.constraintlayout.compose.ConstraintLayout
 import com.airbnb.lottie.compose.LottieAnimation
 import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.rememberLottieComposition
-import com.softtimer.MainActivity
 import com.softtimer.R
-import com.softtimer.TimerViewModel
 import com.softtimer.service.ServiceHelper
 import com.softtimer.service.TimerService
 import com.softtimer.service.TimerState
 import com.softtimer.ui.theme.MID_ANIMATION_DURATION
 import com.softtimer.ui.theme.SHORT_ANIMATION_DURATION
 import com.softtimer.ui.theme.SoftTImerTheme
-import com.softtimer.util.Constants
 import com.softtimer.util.Constants.ACTION_SERVICE_RESET
 import com.softtimer.util.Constants.ACTION_SERVICE_START
 import com.softtimer.util.Constants.ACTION_SERVICE_STOP
 import com.softtimer.util.Constants.CLOCK_MIN_SIZE
+import com.softtimer.util.absPad
 
 private const val TAG = "TimerScreen"
 
@@ -58,13 +56,20 @@ fun TimerScreen(
     timerService: TimerService,
 ) {
     var clockStartResetAnimationRunning by rememberSaveable { mutableStateOf(false) }
-    var clockSize by remember { mutableStateOf(CLOCK_MIN_SIZE) }
-    var hPickerState by remember { mutableStateOf(0) }
-    var minPickerState by remember { mutableStateOf(0) }
-    var sPickerState by remember { mutableStateOf(0) }
-//    var secondReset by remember { mutableStateOf(false) }
+    var clockSize by rememberSaveable { mutableStateOf(CLOCK_MIN_SIZE) }
+    var hPickerState by rememberSaveable { mutableStateOf(0) }
+    var minPickerState by rememberSaveable { mutableStateOf(0) }
+    var sPickerState by rememberSaveable { mutableStateOf(0) }
     val timerState = timerService.timerState
     val context = LocalContext.current
+
+    LaunchedEffect(key1 = timerState) {
+        if(timerState == TimerState.Idle || timerState == TimerState.Reset) {
+            timerService.hState = hPickerState
+            timerService.minState = minPickerState
+            timerService.sState = sPickerState
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -81,8 +86,7 @@ fun TimerScreen(
         contentAlignment = Alignment.Center
     ) {
         ConstraintLayout(
-            modifier = Modifier
-                .fillMaxSize()
+            modifier = Modifier.fillMaxSize()
         ) {
             val (clock, picker) = createRefs()
             val bottomGuideLine = createGuidelineFromBottom(fraction = 0.12f)
@@ -94,14 +98,11 @@ fun TimerScreen(
                     start.linkTo(parent.start)
                     end.linkTo(parent.end)
                 },
+                timerService = timerService,
                 clockSize = clockSize,
-                onClockSizeChanged = {clockSize = it},
-                onClockAnimationStateChanged = { clockStartResetAnimationRunning = it }
-            ) {
-                hPickerState = timerService.hState
-                minPickerState = timerService.minState
-                sPickerState = timerService.sState
-            }
+                onClockSizeChanged = { clockSize = it },
+                onClockAnimationStateChanged = { clockStartResetAnimationRunning = it },
+            )
 
             PickerSection(
                 modifier = Modifier.constrainAs(picker) {
@@ -122,7 +123,7 @@ fun TimerScreen(
                     timerService.minState = selectedMin
                     minPickerState = selectedMin
                 },
-                onSecPickerStateChanged = {selectedSec ->
+                onSecPickerStateChanged = { selectedSec ->
                     timerService.sState = selectedSec
                     sPickerState = selectedSec
                 }
@@ -146,9 +147,9 @@ fun TimerScreen(
                     timerService.secondReset = true
 
                 } else if (timerState == TimerState.Idle) {
-                        hPickerState = 0
-                        minPickerState = 0
-                        sPickerState = 0
+                    hPickerState = 0
+                    minPickerState = 0
+                    sPickerState = 0
 
                     timerService.apply {
                         hState = 0
@@ -211,6 +212,7 @@ fun ActionsSection(
 
 @Composable
 fun RestartButton(
+    modifier: Modifier = Modifier,
     size: Dp,
     onClick: () -> Unit
 ) {
@@ -253,7 +255,7 @@ fun RestartButton(
     }
 
     Box(
-        modifier = Modifier
+        modifier = modifier
             .clickable(interactionSource = interactionSource, indication = null) {
                 onClick()
                 isPlaying = true

@@ -1,5 +1,6 @@
 package com.softtimer.ui
 
+import android.util.Log
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.animateFloatAsState
@@ -35,8 +36,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.softtimer.R
+import com.softtimer.service.TimerService
 import com.softtimer.service.TimerState
-import com.softtimer.timerService
 import com.softtimer.ui.theme.Black
 import com.softtimer.ui.theme.Blue
 import com.softtimer.ui.theme.BlueFlash
@@ -53,6 +54,7 @@ import com.softtimer.util.absPad
 import com.softtimer.util.arcShadow
 import com.softtimer.util.calculateShadowXOffset
 import kotlin.math.sin
+import kotlin.time.Duration
 
 private const val TAG = "Clock1"
 
@@ -60,14 +62,16 @@ private const val TAG = "Clock1"
 fun Clock(
     modifier: Modifier = Modifier,
     clockSize: Float,
+    timerService: TimerService,
     onClockSizeChanged: (Float) -> Unit,
     onClockAnimationStateChanged: (Boolean) -> Unit,
-    onClockInitialStart: () -> Unit
 ) {
     var clockInitialStart by rememberSaveable { mutableStateOf(true) }
     var progressBarSweepAngleTarget by rememberSaveable { mutableStateOf(360f) }
     var progressBarSweepAngle by rememberSaveable { mutableStateOf(0f) }
     var showOvertime by rememberSaveable{ mutableStateOf(false) }
+
+    val timerState = timerService.timerState
 
     val clockSizeModifier by animateFloatAsState(
         targetValue = clockSize,
@@ -76,8 +80,6 @@ fun Clock(
             easing = LinearEasing
         )
     )
-
-    val timerState = timerService.timerState
 
     LaunchedEffect(key1 = timerState) {
         when (timerState) {
@@ -103,8 +105,6 @@ fun Clock(
                     clockInitialStart = false
                     showOvertime = false
 
-                    onClockInitialStart()
-
                     onClockAnimationStateChanged(true)
 
                     //progress bar animation that started when timer does
@@ -126,25 +126,21 @@ fun Clock(
                     initialValue = progressBarSweepAngle,
                     targetValue = 0f,
                     animationSpec = tween(
-                        durationMillis = com.softtimer.timerService.duration.inWholeMilliseconds.toInt(),
+                        durationMillis = timerService.duration.inWholeMilliseconds.toInt(),
                         easing = LinearEasing
                     )
                 ) { value, _ ->
                     progressBarSweepAngle = value
                 }
             }
-
             TimerState.Paused -> {
                 progressBarSweepAngleTarget = progressBarSweepAngle
             }
-
             TimerState.Ringing -> {
                 showOvertime = true
                 progressBarSweepAngleTarget = 0f
                 progressBarSweepAngleTarget = 360f
-
             }
-
             else -> {}
         }
     }

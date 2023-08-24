@@ -14,22 +14,18 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
 import com.softtimer.ExpiredActivity
-import com.softtimer.MainActivity
-import com.softtimer.TimerViewModel
 import com.softtimer.service.ServiceHelper
 import com.softtimer.service.TimerService
-import com.softtimer.timerService
-import com.softtimer.ui.ActionsSection
 import com.softtimer.ui.Clock
 import com.softtimer.ui.RestartButton
-import com.softtimer.ui.TimerNumbers
 import com.softtimer.util.Constants
 import com.softtimer.util.Constants.CLOCK_MAX_SIZE
+import kotlin.time.Duration
 
 @Composable
 fun ExpiredScreen(
     activity: ExpiredActivity,
-    timerService: TimerService,
+    timerService: TimerService
 ) {
     val context = LocalContext.current
     Box(
@@ -42,27 +38,38 @@ fun ExpiredScreen(
                         Pair(1f, Color(0xFFC6C6C6))
                     )
                 ),
-            ),
+            )
+            .padding(bottom = 64.dp),
         contentAlignment = Alignment.Center
     ) {
-        Box(
+        ConstraintLayout(
             modifier = Modifier
                 .fillMaxSize()
         ) {
+            val (clock) = createRefs()
+            val topGuideLine = createGuidelineFromTop(fraction = 0.16f)
+
             Clock(
+                modifier = Modifier.constrainAs(clock) {
+                    top.linkTo(topGuideLine)
+                    start.linkTo(parent.start)
+                    end.linkTo(parent.end)
+                },
+                timerService = timerService,
                 clockSize = CLOCK_MAX_SIZE,
                 onClockSizeChanged = {},
                 onClockAnimationStateChanged = {},
-                onClockInitialStart = {}
             )
         }
 
-        RestartButton(size = 90.dp) {
+        RestartButton(
+            modifier = Modifier.align(Alignment.BottomCenter),
+            size = 90.dp
+        ) {
             ServiceHelper.triggerForegroundService(
                 context = context,
                 action = Constants.ACTION_SERVICE_RESET
             )
-            timerService.secondReset = true
 
             activity.finish()
         }
@@ -73,6 +80,5 @@ fun ExpiredScreen(
 @Composable
 fun ExpiredScreenPreview() {
     SoftTImerTheme {
-//        ExpiredScreen(activity = ExpiredActivity())
     }
 }

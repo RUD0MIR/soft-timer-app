@@ -29,11 +29,13 @@ import com.softtimer.util.Constants
 
 
 private const val TAG = "MainActivity"
-lateinit var timerService: TimerService
+
 
 class MainActivity : ComponentActivity() {
     private val viewModel: TimerViewModel by viewModels()
     private var isBound by mutableStateOf(false)
+    private lateinit var timerService: TimerService
+
     private val connection = object : ServiceConnection {
         override fun onServiceConnected(className: ComponentName, service: IBinder) {
             val binder = service as TimerService.StopwatchBinder
@@ -55,7 +57,6 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         setContent {
             SoftTImerTheme {
                 if (isBound) {

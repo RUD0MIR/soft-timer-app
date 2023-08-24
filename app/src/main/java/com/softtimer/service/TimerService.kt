@@ -241,6 +241,10 @@ class TimerService : Service() {
     private fun resetTimer() {
         ringtone.stop()
         this@TimerService.timerState = TimerState.Idle
+
+        if(timerState == TimerState.Ringing) {
+            secondReset = true
+        }
     }
 
     private fun updateTimeUnits(isTimeExpired: Boolean = false) {

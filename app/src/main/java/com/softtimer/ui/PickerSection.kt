@@ -60,12 +60,15 @@ fun PickerSection(
     hValue: Int,
     minValue: Int,
     sValue: Int,
+    pickerVisibilityValue: Float,
+    onPickerVisibilityValueChanged: (Float) -> Unit,
+    isVisible: Boolean,
+    onVisibilityChanged: (Boolean) -> Unit,
     onHPickerStateChanged: (Int) -> Unit,
     onMinPickerStateChanged: (Int) -> Unit,
     onSecPickerStateChanged: (Int) -> Unit,
 ) {
-    var pickerVisibilityValue by remember { mutableStateOf(1f) }
-    var isVisible by remember { mutableStateOf(true) }
+
 
     val pickerVisibility by animateFloatAsState(
         targetValue = pickerVisibilityValue,
@@ -78,14 +81,14 @@ fun PickerSection(
     LaunchedEffect(key1 = timerState) {
         when (timerState) {
             TimerState.Running -> {
-                pickerVisibilityValue = 0f
+                onPickerVisibilityValueChanged(0f)
                 delay(MID_ANIMATION_DELAY)
-                isVisible = false
+                onVisibilityChanged(false)
             }
 
             TimerState.Idle -> {
-                isVisible = true
-                pickerVisibilityValue = 1f
+                onVisibilityChanged(true)
+                onPickerVisibilityValueChanged(1f)
             }
 
             else -> {}

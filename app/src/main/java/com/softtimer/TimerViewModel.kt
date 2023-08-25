@@ -6,6 +6,8 @@ import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.datastore.preferences.core.Preferences
 import androidx.lifecycle.AndroidViewModel
@@ -23,6 +25,19 @@ import kotlinx.coroutines.withContext
 private const val TAG = "TimerViewModel"
 
 class TimerViewModel(application: Application) : AndroidViewModel(application) {
+    var hPickerState by mutableStateOf(0)
+    var minPickerState by mutableStateOf(0)
+    var sPickerState by mutableStateOf(0)
+
+    var pickerVisibilityValue by mutableStateOf(1f)
+    var isVisible by mutableStateOf(true)
+
+    var clockInitialStart by mutableStateOf(true)
+    var progressBarSweepAngleTarget by mutableStateOf(360f)
+    var progressBarSweepAngle by mutableStateOf(0f)
+    var showOvertime by mutableStateOf(false)
+    var clockSize by mutableStateOf(Constants.CLOCK_MIN_SIZE)
+
     private val repository = DataStoreRepository(application)
 
     suspend fun <T> readFromDataStore(key: Preferences.Key<T>): Flow<T?> {

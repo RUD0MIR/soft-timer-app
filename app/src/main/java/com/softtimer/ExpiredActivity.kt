@@ -18,6 +18,7 @@ import com.softtimer.service.TimerService
 import com.softtimer.ui.theme.ExpiredScreen
 
 class ExpiredActivity : ComponentActivity() {
+    private val viewModel: TimerViewModel by viewModels()
     private var isBound by mutableStateOf(false)
     private lateinit var timerService: TimerService
 
@@ -57,7 +58,7 @@ class ExpiredActivity : ComponentActivity() {
         }
         setContent {
             if(isBound) {
-                ExpiredScreen(activity = this, timerService = timerService)
+                ExpiredScreen(activity = this, timerService = timerService, viewModel = viewModel)
             }
         }
     }

@@ -1,6 +1,7 @@
 package com.softtimer.service
 
 import android.annotation.SuppressLint
+import android.app.KeyguardManager
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
@@ -18,7 +19,6 @@ import androidx.compose.runtime.setValue
 import androidx.core.app.NotificationCompat
 import com.softtimer.ExpiredActivity
 import com.softtimer.MainActivity
-import com.softtimer.util.Constants
 import com.softtimer.util.Constants.ACTION_SERVICE_RESET
 import com.softtimer.util.Constants.ACTION_SERVICE_START
 import com.softtimer.util.Constants.ACTION_SERVICE_STOP
@@ -36,6 +36,7 @@ import kotlin.concurrent.fixedRateTimer
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
+
 
 private const val TAG = "TimerService"
 
@@ -91,6 +92,7 @@ class TimerService : Service() {
         super.onTaskRemoved(rootIntent)
         stopForegroundService()
     }
+
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.getStringExtra(STOPWATCH_STATE)) {
             TimerState.Running.name -> {
@@ -221,10 +223,18 @@ class TimerService : Service() {
         ringtone.play()
         showOvertime = true
 
+        val keyguardManager = getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
         isScreenOffWhenTimeExpired = !powerManager.isInteractive
 
-        if (isScreenOffWhenTimeExpired) {
+        Log.d(TAG, keyguardManager.isKeyguardLocked.toString())
+
+        if (isScreenOffWhenTimeExpired && keyguardManager.isKeyguardLocked) {
             Intent(applicationContext, ExpiredActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                startActivity(this)
+            }
+        } else if(isScreenOffWhenTimeExpired && !keyguardManager.isKeyguardLocked) {
+            Intent(applicationContext, MainActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK
                 startActivity(this)
             }
@@ -242,7 +252,7 @@ class TimerService : Service() {
         ringtone.stop()
         this@TimerService.timerState = TimerState.Idle
 
-        if(timerState == TimerState.Ringing) {
+        if (timerState == TimerState.Ringing) {
             secondReset = true
         }
     }

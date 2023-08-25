@@ -14,6 +14,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
 import com.softtimer.ExpiredActivity
+import com.softtimer.TimerViewModel
 import com.softtimer.service.ServiceHelper
 import com.softtimer.service.TimerService
 import com.softtimer.ui.Clock
@@ -25,6 +26,7 @@ import kotlin.time.Duration
 @Composable
 fun ExpiredScreen(
     activity: ExpiredActivity,
+    viewModel: TimerViewModel,
     timerService: TimerService
 ) {
     val context = LocalContext.current
@@ -56,6 +58,7 @@ fun ExpiredScreen(
                     end.linkTo(parent.end)
                 },
                 timerService = timerService,
+                viewModel = viewModel,
                 clockSize = CLOCK_MAX_SIZE,
                 onClockSizeChanged = {},
                 onClockAnimationStateChanged = {},

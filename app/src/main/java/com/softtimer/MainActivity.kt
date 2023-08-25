@@ -57,11 +57,21 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+            setTurnScreenOn(true)
+        } else {
+            window.apply {
+                addFlags(
+                    WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
+                )
+            }
+        }
         setContent {
             SoftTImerTheme {
                 if (isBound) {
                     TimerScreen(
                         timerService = timerService,
+                        viewModel = viewModel
                     )
                 }
             }

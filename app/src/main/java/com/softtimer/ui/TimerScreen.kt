@@ -37,6 +37,7 @@ import com.airbnb.lottie.compose.LottieAnimation
 import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.rememberLottieComposition
 import com.softtimer.R
+import com.softtimer.TimerViewModel
 import com.softtimer.service.ServiceHelper
 import com.softtimer.service.TimerService
 import com.softtimer.service.TimerState
@@ -54,20 +55,19 @@ private const val TAG = "TimerScreen"
 @Composable
 fun TimerScreen(
     timerService: TimerService,
+    viewModel: TimerViewModel,
 ) {
     var clockStartResetAnimationRunning by rememberSaveable { mutableStateOf(false) }
-    var clockSize by rememberSaveable { mutableStateOf(CLOCK_MIN_SIZE) }
-    var hPickerState by rememberSaveable { mutableStateOf(0) }
-    var minPickerState by rememberSaveable { mutableStateOf(0) }
-    var sPickerState by rememberSaveable { mutableStateOf(0) }
+
+
     val timerState = timerService.timerState
     val context = LocalContext.current
 
     LaunchedEffect(key1 = timerState) {
         if(timerState == TimerState.Idle || timerState == TimerState.Reset) {
-            timerService.hState = hPickerState
-            timerService.minState = minPickerState
-            timerService.sState = sPickerState
+            timerService.hState = viewModel.hPickerState
+            timerService.minState = viewModel.minPickerState
+            timerService.sState = viewModel.sPickerState
         }
     }
 
@@ -99,8 +99,9 @@ fun TimerScreen(
                     end.linkTo(parent.end)
                 },
                 timerService = timerService,
-                clockSize = clockSize,
-                onClockSizeChanged = { clockSize = it },
+                viewModel = viewModel,
+                clockSize = viewModel.clockSize,
+                onClockSizeChanged = { viewModel.clockSize = it },
                 onClockAnimationStateChanged = { clockStartResetAnimationRunning = it },
             )
 
@@ -112,20 +113,24 @@ fun TimerScreen(
                     bottom.linkTo(bottomGuideLine, margin = 18.dp)
                 },
                 timerState = timerService.timerState,
-                hValue = hPickerState,
-                minValue = minPickerState,
-                sValue = sPickerState,
+                pickerVisibilityValue = viewModel.pickerVisibilityValue,
+                onPickerVisibilityValueChanged = {viewModel.pickerVisibilityValue = it},
+                isVisible = viewModel.isVisible,
+                onVisibilityChanged = {viewModel.isVisible = it},
+                hValue = viewModel.hPickerState,
+                minValue = viewModel.minPickerState,
+                sValue = viewModel.sPickerState,
                 onHPickerStateChanged = { selectedHour ->
                     timerService.hState = selectedHour
-                    hPickerState = selectedHour
+                    viewModel.hPickerState = selectedHour
                 },
                 onMinPickerStateChanged = { selectedMin ->
                     timerService.minState = selectedMin
-                    minPickerState = selectedMin
+                    viewModel.minPickerState = selectedMin
                 },
                 onSecPickerStateChanged = { selectedSec ->
                     timerService.sState = selectedSec
-                    sPickerState = selectedSec
+                    viewModel.sPickerState = selectedSec
                 }
             )
         }
@@ -147,9 +152,9 @@ fun TimerScreen(
                     timerService.secondReset = true
 
                 } else if (timerState == TimerState.Idle) {
-                    hPickerState = 0
-                    minPickerState = 0
-                    sPickerState = 0
+                    viewModel.hPickerState = 0
+                    viewModel.minPickerState = 0
+                    viewModel.sPickerState = 0
 
                     timerService.apply {
                         hState = 0

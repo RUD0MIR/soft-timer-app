@@ -12,11 +12,14 @@ import android.media.RingtoneManager
 import android.os.Binder
 import android.os.Build
 import android.os.PowerManager
+import android.os.VibrationEffect
+import android.os.Vibrator
 import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.app.NotificationCompat
+import androidx.lifecycle.LifecycleCoroutineScope
 import com.softtimer.ExpiredActivity
 import com.softtimer.MainActivity
 import com.softtimer.util.Constants.ACTION_SERVICE_RESET
@@ -30,9 +33,15 @@ import com.softtimer.util.absPad
 import com.softtimer.util.formatTime
 import com.softtimer.util.getDurationInSec
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.util.*
 import javax.inject.Inject
 import kotlin.concurrent.fixedRateTimer
+import kotlin.coroutines.CoroutineContext
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
@@ -80,6 +89,8 @@ class TimerService : Service() {
     lateinit var powerManager: PowerManager
     var isScreenOffWhenTimeExpired = false
 
+    private val scope = TimerServiceScope()
+
     override fun onCreate() {
         super.onCreate()
         ringtone = RingtoneManager.getRingtone(applicationContext, alarmSoundUri)
@@ -91,6 +102,11 @@ class TimerService : Service() {
     override fun onTaskRemoved(rootIntent: Intent?) {
         super.onTaskRemoved(rootIntent)
         stopForegroundService()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        scope.cancel()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -233,10 +249,32 @@ class TimerService : Service() {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK
                 startActivity(this)
             }
-        } else if(isScreenOffWhenTimeExpired && !keyguardManager.isKeyguardLocked) {
+        } else if (isScreenOffWhenTimeExpired && !keyguardManager.isKeyguardLocked) {
             Intent(applicationContext, MainActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK
                 startActivity(this)
+            }
+        }
+
+//        scope.launch {
+//            vibratePeriodically(300L, 1100L)
+//        }
+    }
+
+    private suspend fun vibratePeriodically(durationMillis: Long, period: Long) {
+        val vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+
+        if (Build.VERSION.SDK_INT >= 26) {
+            while (timerState == TimerState.Ringing){
+                vibrator.vibrate(
+                    VibrationEffect.createOneShot(durationMillis,VibrationEffect.DEFAULT_AMPLITUDE)
+                )
+                delay(period)
+            }
+        } else {
+            while (timerState == TimerState.Ringing) {
+                vibrator.vibrate(durationMillis)
+                delay(period)
             }
         }
     }
@@ -323,6 +361,16 @@ class TimerService : Service() {
 
     inner class StopwatchBinder : Binder() {
         fun getService(): TimerService = this@TimerService
+    }
+}
+
+class TimerServiceScope : CoroutineScope {
+    private val job = Job()
+    override val coroutineContext: CoroutineContext
+        get() = Dispatchers.Default + job
+
+    fun cancel() {
+        job.cancel()
     }
 }
 

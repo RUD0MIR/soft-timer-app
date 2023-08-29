@@ -15,7 +15,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.softtimer.service.TimerService
-import com.softtimer.ui.theme.ExpiredScreen
+import com.softtimer.ui.ExpiredScreen
 
 class ExpiredActivity : ComponentActivity() {
     private val viewModel: TimerViewModel by viewModels()

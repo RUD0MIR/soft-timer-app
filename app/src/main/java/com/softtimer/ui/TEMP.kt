@@ -157,7 +157,7 @@ package com.softtimer.ui
 ////                textStyle = TextStyle(
 ////                    fontSize = 20.sp,
 ////                    fontFamily = Orbitron,
-////                    color = Black.copy(visibility)
+////                    color = ButtonText.copy(visibility)
 ////                )
 ////            ) { selectedItem, listState ->
 ////                onValueChanged(selectedItem, listState)

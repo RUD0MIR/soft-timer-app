@@ -1,4 +1,4 @@
-package com.softtimer.ui.theme
+package com.softtimer.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -17,11 +17,9 @@ import com.softtimer.ExpiredActivity
 import com.softtimer.TimerViewModel
 import com.softtimer.service.ServiceHelper
 import com.softtimer.service.TimerService
-import com.softtimer.ui.Clock
-import com.softtimer.ui.RestartButton
+import com.softtimer.ui.theme.SoftTImerTheme
 import com.softtimer.util.Constants
 import com.softtimer.util.Constants.CLOCK_MAX_SIZE
-import kotlin.time.Duration
 
 @Composable
 fun ExpiredScreen(

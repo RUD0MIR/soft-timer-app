@@ -20,9 +20,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -37,10 +34,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.softtimer.R
-import com.softtimer.TimerViewModel
-import com.softtimer.service.TimerService
 import com.softtimer.service.TimerState
-import com.softtimer.ui.theme.Black
+import com.softtimer.ui.theme.ButtonText
 import com.softtimer.ui.theme.FaintLight
 import com.softtimer.ui.theme.FaintLight1
 import com.softtimer.ui.theme.FaintShadow
@@ -175,7 +170,7 @@ fun StyledNumberPicker(
                     .align(Alignment.CenterEnd)
                     .padding(bottom = 29.dp, end = 4.dp),
                 text = ":",
-                color = Black,
+                color = ButtonText,
                 fontFamily = Orbitron,
                 fontSize = 18.sp,
                 fontWeight = FontWeight.SemiBold,
@@ -255,7 +250,7 @@ fun StyledNumberPicker(
             text = name,
             fontFamily = Orbitron,
             fontSize = 16.sp,
-            color = Black,
+            color = ButtonText,
             fontWeight = FontWeight.SemiBold
         )
     }

@@ -1,6 +1,5 @@
 package com.softtimer.ui
 
-import android.util.Log
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.animateFloatAsState
@@ -20,7 +19,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -39,23 +37,21 @@ import com.softtimer.R
 import com.softtimer.TimerViewModel
 import com.softtimer.service.TimerService
 import com.softtimer.service.TimerState
-import com.softtimer.ui.theme.Black
-import com.softtimer.ui.theme.Blue
-import com.softtimer.ui.theme.BlueFlash
-import com.softtimer.ui.theme.BlueLight
+import com.softtimer.ui.theme.ButtonText
+import com.softtimer.ui.theme.Glow
+import com.softtimer.ui.theme.GlowFlash
+import com.softtimer.ui.theme.GlowLight
 import com.softtimer.ui.theme.FaintShadow1
 import com.softtimer.ui.theme.Orbitron
 import com.softtimer.ui.theme.SoftTImerTheme
-import com.softtimer.ui.theme.LightBlue
+import com.softtimer.ui.theme.LightGlow
 import com.softtimer.ui.theme.MID_ANIMATION_DURATION
-import com.softtimer.ui.theme.MidBlue
+import com.softtimer.ui.theme.MidGlow
 import com.softtimer.util.Constants.CLOCK_MAX_SIZE
 import com.softtimer.util.Constants.CLOCK_MIN_SIZE
 import com.softtimer.util.absPad
 import com.softtimer.util.arcShadow
 import com.softtimer.util.calculateShadowXOffset
-import kotlin.math.sin
-import kotlin.time.Duration
 
 private const val TAG = "Clock1"
 
@@ -266,7 +262,7 @@ fun TimerNumbers(
                 }
             },
             fontFamily = Orbitron,
-            color = Black,
+            color = ButtonText,
             fontSize = if (isHourVisible) (16f * sizeModifier).sp else (20f * sizeModifier).sp//16//20
         )
 
@@ -277,7 +273,7 @@ fun TimerNumbers(
                     .offset(x = 23.dp),
                 text = "-$overtimeMins:$overtimeSecs.$overtimeMillis",
                 fontFamily = Orbitron,
-                color = Blue,
+                color = Glow,
                 fontSize = (10f * sizeModifier).sp
             )
         }
@@ -290,7 +286,7 @@ fun ProgressBar(sweepAngle: Float, diameter: Float, sizeModifier: Float) {
         modifier = Modifier
             .size(diameter.dp)
             .arcShadow(
-                color = BlueLight,
+                color = GlowLight,
                 startAngle = 0f,
                 useCenter = true,
                 spread = (2f * sizeModifier).dp,//2
@@ -310,9 +306,9 @@ fun ProgressBar(sweepAngle: Float, diameter: Float, sizeModifier: Float) {
                     useCenter = true,
                     brush = Brush.sweepGradient(
                         colors = listOf(
-                            LightBlue,
-                            Blue,
-                            Blue,
+                            LightGlow,
+                            Glow,
+                            Glow,
                         ),
                         center = center
                     )
@@ -328,7 +324,7 @@ fun ProgressBar(sweepAngle: Float, diameter: Float, sizeModifier: Float) {
                         colors = listOf(
                             Color.Transparent,
                             Color.Transparent,
-                            BlueFlash,
+                            GlowFlash,
                             Color.Transparent,
                             Color.Transparent,
                             Color.Transparent,
@@ -368,11 +364,11 @@ fun ProgressBar(sweepAngle: Float, diameter: Float, sizeModifier: Float) {
                     useCenter = false,
                     brush = Brush.horizontalGradient(
                         colors = listOf(
-                            Blue,
-                            Blue,
-                            MidBlue,
-                            MidBlue,
-                            LightBlue
+                            Glow,
+                            Glow,
+                            MidGlow,
+                            MidGlow,
+                            LightGlow
                         )
                     )
                 )
@@ -424,7 +420,7 @@ fun Indicator(modifier: Modifier = Modifier, sweepAngle: Float, sizeModifier: Fl
         //Indicator
         Box(
             modifier = modifier
-                .background(Blue)
+                .background(Glow)
                 .size(
                     width = (4 * sizeModifier).dp,//4
                     height = (58 * sizeModifier).dp//58

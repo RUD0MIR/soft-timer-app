@@ -37,16 +37,23 @@ import com.softtimer.R
 import com.softtimer.TimerViewModel
 import com.softtimer.service.TimerService
 import com.softtimer.service.TimerState
-import com.softtimer.ui.theme.ButtonText
-import com.softtimer.ui.theme.Glow
-import com.softtimer.ui.theme.GlowFlash
-import com.softtimer.ui.theme.GlowLight
-import com.softtimer.ui.theme.FaintShadow1
+import com.softtimer.ui.theme.ButtonTextLight
+import com.softtimer.ui.theme.Blue
+import com.softtimer.ui.theme.BlueFlash
+import com.softtimer.ui.theme.BlueLight
+import com.softtimer.ui.theme.ButtonTextDark
+import com.softtimer.ui.theme.FaintShadow1Dark
+import com.softtimer.ui.theme.FaintShadow1Light
 import com.softtimer.ui.theme.Orbitron
 import com.softtimer.ui.theme.SoftTImerTheme
-import com.softtimer.ui.theme.LightGlow
+import com.softtimer.ui.theme.LightBlue
+import com.softtimer.ui.theme.LightOrange
 import com.softtimer.ui.theme.MID_ANIMATION_DURATION
-import com.softtimer.ui.theme.MidGlow
+import com.softtimer.ui.theme.MidBlue
+import com.softtimer.ui.theme.MidOrange
+import com.softtimer.ui.theme.Orange
+import com.softtimer.ui.theme.OrangeFlash
+import com.softtimer.ui.theme.OrangeLight
 import com.softtimer.util.Constants.CLOCK_MAX_SIZE
 import com.softtimer.util.Constants.CLOCK_MIN_SIZE
 import com.softtimer.util.absPad
@@ -61,6 +68,7 @@ fun Clock(
     clockSize: Float,
     timerService: TimerService,
     viewModel: TimerViewModel,
+    isDarkTheme: Boolean,
     onClockSizeChanged: (Float) -> Unit,
     onClockAnimationStateChanged: (Boolean) -> Unit,
 ) {
@@ -126,14 +134,17 @@ fun Clock(
                     viewModel.progressBarSweepAngle = value
                 }
             }
+
             TimerState.Paused -> {
                 viewModel.progressBarSweepAngleTarget = viewModel.progressBarSweepAngle
             }
+
             TimerState.Ringing -> {
                 viewModel.showOvertime = true
                 viewModel.progressBarSweepAngleTarget = 0f
                 viewModel.progressBarSweepAngleTarget = 360f
             }
+
             else -> {}
         }
     }
@@ -149,12 +160,13 @@ fun Clock(
             modifier = Modifier
                 .size(284.dp * clockSizeModifier)
                 .offset(y = 5.dp * clockSizeModifier),
-            painter = painterResource(id = R.drawable.bottom_circle),
+            painter = painterResource(id = if(isDarkTheme) R.drawable.dark_bottom_circle else R.drawable.bottom_circle),
             contentScale = ContentScale.Crop,
             contentDescription = null
         )
 
         ProgressBar(
+            isDarkTheme = isDarkTheme,
             sweepAngle = viewModel.progressBarSweepAngle,
             diameter = 210f * clockSizeModifier,//210
             sizeModifier = clockSizeModifier
@@ -164,13 +176,14 @@ fun Clock(
             modifier = Modifier
                 .size(200.dp * clockSizeModifier)
                 .offset(x = 5.dp * clockSizeModifier, y = 12.dp * clockSizeModifier),
-            painter = painterResource(id = R.drawable.mid_circle_group),
+            painter = painterResource(id = if(isDarkTheme) R.drawable.dark_mid_circle_group else R.drawable.mid_circle_group),
             contentScale = ContentScale.Crop,
             contentDescription = null
         )
 
         Indicator(
             modifier = Modifier.offset(y = (-76f * clockSizeModifier).dp),
+            isDarkTheme = isDarkTheme,
             sweepAngle = viewModel.progressBarSweepAngle,
             sizeModifier = clockSizeModifier
         )
@@ -179,14 +192,15 @@ fun Clock(
             modifier = Modifier
                 .size(160.dp * clockSizeModifier)
                 .offset(x = 10.dp * clockSizeModifier, y = 10.dp * clockSizeModifier),
-            painter = painterResource(id = R.drawable.top_circle),
+            painter = painterResource(id = if(isDarkTheme) R.drawable.dark_top_circle else R.drawable.top_circle),
             contentScale = ContentScale.Crop,
             contentDescription = null
         )
 
-        if(viewModel.showOvertime) {
+        if (viewModel.showOvertime) {
             TimerNumbers(
                 timerState = timerService.timerState,
+                isDarkTheme = isDarkTheme,
                 hours = timerService.hState.absPad(),
                 minutes = timerService.minState.absPad(),
                 seconds = timerService.sState.absPad(),
@@ -199,6 +213,7 @@ fun Clock(
         } else {
             TimerNumbers(
                 timerState = timerService.timerState,
+                isDarkTheme = isDarkTheme,
                 hours = timerService.hState.absPad(),
                 minutes = timerService.minState.absPad(),
                 seconds = timerService.sState.absPad(),
@@ -212,6 +227,7 @@ fun Clock(
 @Composable
 fun TimerNumbers(
     timerState: TimerState,
+    isDarkTheme: Boolean,
     hours: String,
     minutes: String,
     seconds: String,
@@ -243,7 +259,7 @@ fun TimerNumbers(
                 }
             },
             fontFamily = Orbitron,
-            color = FaintShadow1,
+            color = if (isDarkTheme) FaintShadow1Dark else FaintShadow1Light,
             fontSize = if (isHourVisible)
                 (16f * sizeModifier).sp
             else (20f * sizeModifier).sp//16//20
@@ -262,7 +278,7 @@ fun TimerNumbers(
                 }
             },
             fontFamily = Orbitron,
-            color = ButtonText,
+            color = if (isDarkTheme) ButtonTextDark else ButtonTextLight,
             fontSize = if (isHourVisible) (16f * sizeModifier).sp else (20f * sizeModifier).sp//16//20
         )
 
@@ -273,7 +289,7 @@ fun TimerNumbers(
                     .offset(x = 23.dp),
                 text = "-$overtimeMins:$overtimeSecs.$overtimeMillis",
                 fontFamily = Orbitron,
-                color = Glow,
+                color = if (isDarkTheme) Orange else Blue,
                 fontSize = (10f * sizeModifier).sp
             )
         }
@@ -281,12 +297,17 @@ fun TimerNumbers(
 }
 
 @Composable
-fun ProgressBar(sweepAngle: Float, diameter: Float, sizeModifier: Float) {
+fun ProgressBar(
+    sweepAngle: Float,
+    isDarkTheme: Boolean,
+    diameter: Float,
+    sizeModifier: Float
+) {
     Canvas(
         modifier = Modifier
             .size(diameter.dp)
             .arcShadow(
-                color = GlowLight,
+                color = if (isDarkTheme) OrangeLight else BlueLight,
                 startAngle = 0f,
                 useCenter = true,
                 spread = (2f * sizeModifier).dp,//2
@@ -305,11 +326,19 @@ fun ProgressBar(sweepAngle: Float, diameter: Float, sizeModifier: Float) {
                     size = Size(width = diameter.dp.toPx(), height = diameter.dp.toPx()),
                     useCenter = true,
                     brush = Brush.sweepGradient(
-                        colors = listOf(
-                            LightGlow,
-                            Glow,
-                            Glow,
-                        ),
+                        colors = if (isDarkTheme) {
+                            listOf(
+                                LightOrange,
+                                Orange,
+                                Orange,
+                            )
+                        } else {
+                            listOf(
+                                LightBlue,
+                                Blue,
+                                Blue,
+                            )
+                        },
                         center = center
                     )
                 )
@@ -321,13 +350,10 @@ fun ProgressBar(sweepAngle: Float, diameter: Float, sizeModifier: Float) {
                     size = Size(width = diameter.dp.toPx(), height = diameter.dp.toPx()),
                     useCenter = true,
                     brush = Brush.sweepGradient(
-                        colors = listOf(
+                        colors = if (isDarkTheme) listOf(
                             Color.Transparent,
                             Color.Transparent,
-                            GlowFlash,
-                            Color.Transparent,
-                            Color.Transparent,
-                            Color.Transparent,
+                            OrangeFlash,
                             Color.Transparent,
                             Color.Transparent,
                             Color.Transparent,
@@ -351,7 +377,42 @@ fun ProgressBar(sweepAngle: Float, diameter: Float, sizeModifier: Float) {
                             Color.Transparent,
                             Color.Transparent,
                             Color.Transparent,
-                        ),
+                            Color.Transparent,
+                            Color.Transparent,
+                            Color.Transparent,
+                        )
+                        else
+                            listOf(
+                                Color.Transparent,
+                                Color.Transparent,
+                                BlueFlash,
+                                Color.Transparent,
+                                Color.Transparent,
+                                Color.Transparent,
+                                Color.Transparent,
+                                Color.Transparent,
+                                Color.Transparent,
+                                Color.Transparent,
+                                Color.Transparent,
+                                Color.Transparent,
+                                Color.Transparent,
+                                Color.Transparent,
+                                Color.Transparent,
+                                Color.Transparent,
+                                Color.Transparent,
+                                Color.Transparent,
+                                Color.Transparent,
+                                Color.Transparent,
+                                Color.Transparent,
+                                Color.Transparent,
+                                Color.Transparent,
+                                Color.Transparent,
+                                Color.Transparent,
+                                Color.Transparent,
+                                Color.Transparent,
+                                Color.Transparent,
+                                Color.Transparent,
+                            ),
                     ),
                 )
 
@@ -363,13 +424,22 @@ fun ProgressBar(sweepAngle: Float, diameter: Float, sizeModifier: Float) {
                     size = Size(width = diameter.dp.toPx(), height = diameter.dp.toPx()),
                     useCenter = false,
                     brush = Brush.horizontalGradient(
-                        colors = listOf(
-                            Glow,
-                            Glow,
-                            MidGlow,
-                            MidGlow,
-                            LightGlow
-                        )
+                        colors = if (isDarkTheme)
+                            listOf(
+                                Orange,
+                                Orange,
+                                MidOrange,
+                                MidOrange,
+                                LightOrange
+                            )
+                        else
+                            listOf(
+                                Blue,
+                                Blue,
+                                MidBlue,
+                                MidBlue,
+                                LightBlue
+                            )
                     )
                 )
             }
@@ -378,7 +448,12 @@ fun ProgressBar(sweepAngle: Float, diameter: Float, sizeModifier: Float) {
 }
 
 @Composable
-fun Indicator(modifier: Modifier = Modifier, sweepAngle: Float, sizeModifier: Float) {
+fun Indicator(
+    modifier: Modifier = Modifier,
+    isDarkTheme: Boolean,
+    sweepAngle: Float,
+    sizeModifier: Float
+) {
     var shadowOffsetState by remember {
         mutableStateOf(0f)
     }
@@ -412,7 +487,7 @@ fun Indicator(modifier: Modifier = Modifier, sweepAngle: Float, sizeModifier: Fl
                 .offset(
                     x = shadowOffset.value.dp
                 ),
-            painter = painterResource(id = R.drawable.indicator_shadow),
+            painter = painterResource(id = if(isDarkTheme) R.drawable.dark_indicator_shadow else R.drawable.indicator_shadow),
             contentScale = ContentScale.FillBounds,
             contentDescription = null,
         )
@@ -420,7 +495,7 @@ fun Indicator(modifier: Modifier = Modifier, sweepAngle: Float, sizeModifier: Fl
         //Indicator
         Box(
             modifier = modifier
-                .background(Glow)
+                .background(if(isDarkTheme) Orange else Blue)
                 .size(
                     width = (4 * sizeModifier).dp,//4
                     height = (58 * sizeModifier).dp//58

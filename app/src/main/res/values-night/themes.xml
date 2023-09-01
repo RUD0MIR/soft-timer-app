@@ -3,7 +3,7 @@
     <style name="Theme.SoftTImer" parent="android:Theme.Material.Light.NoActionBar" >
         <item name="android:windowTranslucentStatus">true</item>
 
-<!--        needed only for number picker-->
+        <!--        needed only for number picker-->
         <item name="android:colorControlNormal">@android:color/transparent</item>
         <item name="android:fontFamily">@font/orbitron_semi_bold</item>
         <item name="android:textSize">20.sp</item>

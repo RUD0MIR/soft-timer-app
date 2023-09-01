@@ -1,6 +1,7 @@
 package com.softtimer.ui
 
 import android.util.Log
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.tween
@@ -33,6 +34,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
+import androidx.core.content.ContextCompat
 import com.airbnb.lottie.compose.LottieAnimation
 import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.rememberLottieComposition
@@ -41,14 +43,16 @@ import com.softtimer.TimerViewModel
 import com.softtimer.service.ServiceHelper
 import com.softtimer.service.TimerService
 import com.softtimer.service.TimerState
+import com.softtimer.ui.theme.Black
+import com.softtimer.ui.theme.DarkGray
+import com.softtimer.ui.theme.LightGray
 import com.softtimer.ui.theme.MID_ANIMATION_DURATION
 import com.softtimer.ui.theme.SHORT_ANIMATION_DURATION
 import com.softtimer.ui.theme.SoftTImerTheme
+import com.softtimer.ui.theme.White
 import com.softtimer.util.Constants.ACTION_SERVICE_RESET
 import com.softtimer.util.Constants.ACTION_SERVICE_START
 import com.softtimer.util.Constants.ACTION_SERVICE_STOP
-import com.softtimer.util.Constants.CLOCK_MIN_SIZE
-import com.softtimer.util.absPad
 
 private const val TAG = "TimerScreen"
 
@@ -59,12 +63,11 @@ fun TimerScreen(
 ) {
     var clockStartResetAnimationRunning by rememberSaveable { mutableStateOf(false) }
 
-
     val timerState = timerService.timerState
     val context = LocalContext.current
 
     LaunchedEffect(key1 = timerState) {
-        if(timerState == TimerState.Idle || timerState == TimerState.Reset) {
+        if (timerState == TimerState.Idle || timerState == TimerState.Reset) {
             timerService.hState = viewModel.hPickerState
             timerService.minState = viewModel.minPickerState
             timerService.sState = viewModel.sPickerState
@@ -76,10 +79,16 @@ fun TimerScreen(
             .fillMaxSize()
             .background(
                 brush = Brush.linearGradient(
-                    colorStops = arrayOf(
-                        Pair(0.3f, Color(0xFFEAE7E7)),
-                        Pair(1f, Color(0xFFC6C6C6))
-                    )
+                    colorStops = if (viewModel.isDarkTheme)
+                        arrayOf(
+                            Pair(0.3f, Black),
+                            Pair(1f, DarkGray)
+                        )
+                    else
+                        arrayOf(
+                            Pair(0.3f, White),
+                            Pair(1f, LightGray)
+                        )
                 )
             )
             .padding(bottom = 64.dp),
@@ -98,6 +107,7 @@ fun TimerScreen(
                     start.linkTo(parent.start)
                     end.linkTo(parent.end)
                 },
+                isDarkTheme = viewModel.isDarkTheme,
                 timerService = timerService,
                 viewModel = viewModel,
                 clockSize = viewModel.clockSize,
@@ -112,11 +122,12 @@ fun TimerScreen(
                     end.linkTo(parent.end)
                     bottom.linkTo(bottomGuideLine, margin = 18.dp)
                 },
+                isDarkTheme = viewModel.isDarkTheme,
                 timerState = timerService.timerState,
                 pickerVisibilityValue = viewModel.pickerVisibilityValue,
-                onPickerVisibilityValueChanged = {viewModel.pickerVisibilityValue = it},
+                onPickerVisibilityValueChanged = { viewModel.pickerVisibilityValue = it },
                 isVisible = viewModel.isVisible,
-                onVisibilityChanged = {viewModel.isVisible = it},
+                onVisibilityChanged = { viewModel.isVisible = it },
                 hValue = viewModel.hPickerState,
                 minValue = viewModel.minPickerState,
                 sValue = viewModel.sPickerState,
@@ -138,6 +149,7 @@ fun TimerScreen(
         ActionsSection(
             modifier = Modifier.align(Alignment.BottomCenter),
             timerState = timerState,
+            isDarkTheme = viewModel.isDarkTheme,
             onButtonResetClick = {
                 if (
                     timerState == TimerState.Running ||
@@ -174,7 +186,18 @@ fun TimerScreen(
                 }
             },
             onButtonThemeClick = {
-                //TODO change theme
+                if(viewModel.isDarkTheme) {
+                    AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
+                } else {
+                    AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
+
+                }
+                val theme = context.theme
+                val array = theme.obtainStyledAttributes(R.style.Theme_SoftTImer, intArrayOf(android.R.attr.textColor))
+                val currentTextColor = array.getColor(0, 0)
+
+                val newTextColor = ContextCompat.getColor(context, R.color.white)
+                viewModel.isDarkTheme = !viewModel.isDarkTheme
             }
         )
     }
@@ -184,6 +207,7 @@ fun TimerScreen(
 fun ActionsSection(
     modifier: Modifier = Modifier,
     timerState: TimerState,
+    isDarkTheme: Boolean,
     onButtonResetClick: () -> Unit,
     onButtonPlayPauseClick: () -> Unit,
     onButtonThemeClick: () -> Unit,
@@ -196,6 +220,7 @@ fun ActionsSection(
         //restart button
         RestartButton(
             size = if (timerState == TimerState.Ringing) 90.dp else 50.dp,
+            isDarkTheme = isDarkTheme
         ) {
             onButtonResetClick()
         }
@@ -203,12 +228,13 @@ fun ActionsSection(
         if (timerState != TimerState.Ringing) {
             PlayPauseButton(
                 size = 90.dp,
-                timerState = timerState
+                timerState = timerState,
+                isDarkTheme = isDarkTheme
             ) {
                 onButtonPlayPauseClick()
             }
 
-            ThemeButton(size = 50.dp) {
+            ThemeButton(size = 50.dp, isDarkTheme = isDarkTheme) {
                 onButtonThemeClick()
             }
         }
@@ -218,11 +244,15 @@ fun ActionsSection(
 @Composable
 fun RestartButton(
     modifier: Modifier = Modifier,
+    isDarkTheme: Boolean,
     size: Dp,
     onClick: () -> Unit
 ) {
     val interactionSource = remember { MutableInteractionSource() }
-    val restartAnimation by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.anim_reset))
+    val restartAnimation by rememberLottieComposition(
+        if (isDarkTheme) LottieCompositionSpec.RawRes(R.raw.dark_anim_reset)
+        else LottieCompositionSpec.RawRes(R.raw.anim_reset)
+    )
     var isPlaying by remember { mutableStateOf(false) }
     var progress by remember { mutableStateOf(1f) }
 
@@ -269,7 +299,7 @@ fun RestartButton(
     ) {
         Image(
             modifier = Modifier.size(size),
-            painter = painterResource(id = R.drawable.button),
+            painter = painterResource(id = if (isDarkTheme) R.drawable.dark_button else R.drawable.button),
             contentDescription = null
         )
 
@@ -286,15 +316,15 @@ fun RestartButton(
 @Composable
 fun PlayPauseButton(
     size: Dp,
+    isDarkTheme: Boolean,
     timerState: TimerState,
     onClick: () -> Unit
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     var isAnimPlaying by remember { mutableStateOf(false) }
     val pauseAnimComposition by rememberLottieComposition(
-        LottieCompositionSpec.RawRes(
-            R.raw.anim_pause
-        )
+        if (isDarkTheme) LottieCompositionSpec.RawRes(R.raw.dark_anim_pause)
+        else LottieCompositionSpec.RawRes(R.raw.anim_pause)
     )
     var progress by remember {
         mutableStateOf(0f)
@@ -344,7 +374,7 @@ fun PlayPauseButton(
     ) {
         Image(
             modifier = Modifier.size(size),
-            painter = painterResource(id = R.drawable.button),
+            painter = painterResource(id = if (isDarkTheme) R.drawable.dark_button else R.drawable.button),
             contentDescription = null
         )
 
@@ -361,30 +391,30 @@ fun PlayPauseButton(
 @Composable
 fun ThemeButton(
     size: Dp,
+    isDarkTheme: Boolean,
     onClick: () -> Unit
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     var isLightTheme by remember { mutableStateOf(true) }
     var isAnimPlaying by remember { mutableStateOf(false) }
     val composition by rememberLottieComposition(
-        LottieCompositionSpec.RawRes(
-            R.raw.anim_moon_sun
-        )
+        if (isDarkTheme) LottieCompositionSpec.RawRes(R.raw.dark_anim_moon_sun)
+        else LottieCompositionSpec.RawRes(R.raw.anim_moon_sun)
     )
 
     var progress by remember {
-        mutableStateOf(0f)
+        mutableStateOf(0.4f)
     }
 
     LaunchedEffect(key1 = isAnimPlaying) {
         if (isAnimPlaying) {
             if (isLightTheme) {
-                val targetValue = 1f
-                progress = 0.5f
+                val targetValue = 0.5f
+                progress = 0f
 
                 animate(
                     initialValue = progress,
-                    targetValue = 1f,
+                    targetValue = targetValue,
                     animationSpec = tween(
                         durationMillis = MID_ANIMATION_DURATION,
                         easing = LinearEasing
@@ -393,13 +423,14 @@ fun ThemeButton(
                     progress = value
                     if (value == targetValue) isAnimPlaying = false
                 }
+
             } else {
-                val targetValue = 0.5f
-                progress = 0f
+                val targetValue = 1f
+                progress = 0.5f
 
                 animate(
                     initialValue = progress,
-                    targetValue = targetValue,
+                    targetValue = 1f,
                     animationSpec = tween(
                         durationMillis = MID_ANIMATION_DURATION,
                         easing = LinearEasing
@@ -425,7 +456,7 @@ fun ThemeButton(
     ) {
         Image(
             modifier = Modifier.size(size),
-            painter = painterResource(id = R.drawable.button),
+            painter = painterResource(id = if (isDarkTheme) R.drawable.dark_button else R.drawable.button),
             contentDescription = null
         )
 

@@ -1,5 +1,6 @@
 package com.softtimer.ui
 
+import android.os.Build
 import android.util.Log
 import android.widget.NumberPicker
 import androidx.compose.animation.core.LinearEasing
@@ -7,6 +8,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -35,10 +37,14 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.softtimer.R
 import com.softtimer.service.TimerState
-import com.softtimer.ui.theme.ButtonText
+import com.softtimer.ui.theme.ButtonTextDark
+import com.softtimer.ui.theme.ButtonTextLight
 import com.softtimer.ui.theme.FaintLight
-import com.softtimer.ui.theme.FaintLight1
+import com.softtimer.ui.theme.FaintLight1Dark
+import com.softtimer.ui.theme.FaintLight1Light
+import com.softtimer.ui.theme.FaintLightDark
 import com.softtimer.ui.theme.FaintShadow
+import com.softtimer.ui.theme.FaintShadowLight
 import com.softtimer.ui.theme.MID_ANIMATION_DELAY
 import com.softtimer.ui.theme.MID_ANIMATION_DURATION
 import com.softtimer.ui.theme.Orbitron
@@ -52,6 +58,7 @@ private const val TAG = "PickerSection"
 fun PickerSection(
     modifier: Modifier = Modifier,
     timerState: TimerState,
+    isDarkTheme: Boolean,
     hValue: Int,
     minValue: Int,
     sValue: Int,
@@ -106,6 +113,7 @@ fun PickerSection(
                     modifier = Modifier
                         .offset(x = 14.dp)
                         .alpha(pickerVisibility),
+                    isDarkTheme = isDarkTheme,
                     range = getNumbersWithPad(1..24),
                     showDivider = true,
                     pickerValue = hValue,
@@ -116,6 +124,7 @@ fun PickerSection(
 
                 StyledNumberPicker(
                     modifier = Modifier.alpha(pickerVisibility),
+                    isDarkTheme = isDarkTheme,
                     range = getNumbersWithPad(1..59),
                     name = "min",
                     pickerValue = minValue,
@@ -129,6 +138,7 @@ fun PickerSection(
                     modifier = Modifier
                         .offset(x = (-14).dp)
                         .alpha(pickerVisibility),
+                    isDarkTheme = isDarkTheme,
                     range = getNumbersWithPad(1..59),
                     pickerValue = sValue,
                     name = "s"
@@ -144,6 +154,7 @@ fun PickerSection(
 @Composable
 fun StyledNumberPicker(
     modifier: Modifier = Modifier,
+    isDarkTheme: Boolean,
     range: List<String>,
     showDivider: Boolean = false,
     name: String,
@@ -158,7 +169,7 @@ fun StyledNumberPicker(
             modifier = Modifier
                 .fillMaxWidth()
                 .fillMaxHeight(0.8f),
-            painter = painterResource(id = R.drawable.picker_shadow),
+            painter = painterResource(id = if(isDarkTheme) R.drawable.dark_picker_shadow else R.drawable.picker_shadow),
             contentDescription = null,
             contentScale = ContentScale.FillBounds
         )
@@ -170,7 +181,7 @@ fun StyledNumberPicker(
                     .align(Alignment.CenterEnd)
                     .padding(bottom = 29.dp, end = 4.dp),
                 text = ":",
-                color = ButtonText,
+                color = if(isDarkTheme) ButtonTextDark else ButtonTextLight,
                 fontFamily = Orbitron,
                 fontSize = 18.sp,
                 fontWeight = FontWeight.SemiBold,
@@ -190,7 +201,6 @@ fun StyledNumberPicker(
                 factory = { context ->
                     NumberPicker(context).apply {
                         minValue = 0
-                        isSoundEffectsEnabled = true
                         clipToOutline = true
                         maxValue = range.size - 1
                         displayedValues = range.toTypedArray()
@@ -203,7 +213,9 @@ fun StyledNumberPicker(
                 },
                 update = {
                         it.value = pickerValue
-                    Log.d(TAG, "${it.value}")
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        it.textColor = if(isDarkTheme) ButtonTextDark.hashCode() else ButtonTextLight.hashCode()
+                    }
                 }
             )
 
@@ -218,7 +230,7 @@ fun StyledNumberPicker(
                     brush = Brush.verticalGradient(
                         colors = listOf(
                             Color.Transparent,
-                            FaintShadow,
+                            if(isDarkTheme) FaintShadow else FaintShadowLight,
                             Color.Transparent
                         )
                     )
@@ -236,8 +248,8 @@ fun StyledNumberPicker(
                     brush = Brush.verticalGradient(
                         colors = listOf(
                             Color.Transparent,
-                            FaintLight1,
-                            FaintLight,
+                            if(isDarkTheme) FaintLight1Dark else FaintLight1Light,
+                            if(isDarkTheme) FaintLightDark else FaintLight,
                             Color.Transparent
                         ),
                     )
@@ -250,7 +262,7 @@ fun StyledNumberPicker(
             text = name,
             fontFamily = Orbitron,
             fontSize = 16.sp,
-            color = ButtonText,
+            color = if(isDarkTheme) ButtonTextDark else ButtonTextLight,
             fontWeight = FontWeight.SemiBold
         )
     }

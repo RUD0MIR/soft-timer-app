@@ -55,6 +55,7 @@ fun ExpiredScreen(
                     start.linkTo(parent.start)
                     end.linkTo(parent.end)
                 },
+                isDarkTheme = viewModel.isDarkTheme,
                 timerService = timerService,
                 viewModel = viewModel,
                 clockSize = CLOCK_MAX_SIZE,
@@ -65,7 +66,8 @@ fun ExpiredScreen(
 
         RestartButton(
             modifier = Modifier.align(Alignment.BottomCenter),
-            size = 90.dp
+            size = 90.dp,
+            isDarkTheme = viewModel.isDarkTheme
         ) {
             ServiceHelper.triggerForegroundService(
                 context = context,

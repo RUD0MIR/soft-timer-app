@@ -20,9 +20,8 @@ const val MID_ANIMATION_DELAY = 1000L
 const val MID_ANIMATION_DURATION = MID_ANIMATION_DELAY.toInt() - 150
 const val SHORT_ANIMATION_DURATION = 500
 
-val isLightTheme = mutableStateOf(false)
-
 private val DarkColorScheme = darkColorScheme(
+
 )
 
 private val LightColorScheme = lightColorScheme(
@@ -31,7 +30,6 @@ private val LightColorScheme = lightColorScheme(
 @Composable
 fun SoftTImerTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
     dynamicColor: Boolean = true,
     content: @Composable () -> Unit
 ) {

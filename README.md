@@ -1,5 +1,7 @@
-![ic_launcher](https://github.com/RUD0MIR/soft-timer-app/assets/114794142/f2567cc2-b9d8-4e5b-9104-c25813ab278f)
+![ic_launcher](https://github.com/RUD0MIR/soft-timer-app/assets/114794142/ee2c12a6-51ab-40a9-a226-9735b6743bc3)
+
 # Soft Timer App
+
 
 Brought to life the design of a simple timer in neumorphism style.
 
@@ -8,8 +10,9 @@ https://dribbble.com/shots/11348868-Soft-UI-Countdown-Timer
 
 ## Screenshots
 
-![light theme screen](https://github.com/RUD0MIR/soft-timer-app/assets/114794142/c3366e78-ebfb-4b32-8c77-164888fdb657)
-![dark theme screen](https://github.com/RUD0MIR/soft-timer-app/assets/114794142/1713d612-6cf6-4c91-995a-ef349b9bea9c)
+![light theme screen](https://github.com/RUD0MIR/soft-timer-app/assets/114794142/600a3bd0-a38d-447e-abcd-698082f40e9a)
+![dark theme screen](https://github.com/RUD0MIR/soft-timer-app/assets/114794142/eeed0981-7cc5-42db-a73f-8c1c29827f35)
+
 
 ## Used and implemented
 

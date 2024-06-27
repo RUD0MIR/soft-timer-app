@@ -75,9 +75,9 @@ class TimerService : Service() {
     var overtimeDuration: Duration = Duration.ZERO
         private set
 
-    var overtimeMins by mutableStateOf(0)
-    var overtimeSecs by mutableStateOf(0)
-    var overtimeMillis by mutableStateOf(0)
+    var overtimeMins by mutableIntStateOf(0)
+    var overtimeSecs by mutableIntStateOf(0)
+    var overtimeMillis by mutableIntStateOf(0)
 
     fun getOvertimeMillis(): String {
         return String.format("%02d", overtimeMillis / 10000000)

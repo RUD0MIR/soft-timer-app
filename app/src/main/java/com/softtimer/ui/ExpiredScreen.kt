@@ -14,7 +14,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
 import com.softtimer.ExpiredActivity
-import com.softtimer.TimerViewModel
 import com.softtimer.service.ServiceHelper
 import com.softtimer.service.TimerService
 import com.softtimer.ui.theme.SoftTImerTheme
@@ -24,7 +23,7 @@ import com.softtimer.util.Constants.CLOCK_MAX_SIZE
 @Composable
 fun ExpiredScreen(
     activity: ExpiredActivity,
-    viewModel: TimerViewModel,
+    isDarkTheme: Boolean,
     timerService: TimerService
 ) {
     val context = LocalContext.current
@@ -49,34 +48,48 @@ fun ExpiredScreen(
             val (clock) = createRefs()
             val topGuideLine = createGuidelineFromTop(fraction = 0.16f)
 
-            Clock(
-                modifier = Modifier.constrainAs(clock) {
-                    top.linkTo(topGuideLine)
-                    start.linkTo(parent.start)
-                    end.linkTo(parent.end)
-                },
-                isDarkTheme = viewModel.isDarkTheme,
-                timerService = timerService,
-                viewModel = viewModel,
-                clockSize = CLOCK_MAX_SIZE,
-                onClockSizeChanged = {},
-                onClockAnimationStateChanged = {},
-            )
-        }
+        Clock(
+            modifier = Modifier.constrainAs(clock) {
+                top.linkTo(topGuideLine)
+                start.linkTo(parent.start)
+                end.linkTo(parent.end)
+            },
+            isDarkTheme = isDarkTheme,
+            timerState = timerService.timerState,
+            duration = timerService.duration,
+            hState = timerService.hState,
+            minState = timerService.minState,
+            sState = timerService.sState,
+            overtimeMins = timerService.overtimeMins,
+            overtimeSecs = timerService.overtimeSecs,
+            overtimeMillis = timerService.getOvertimeMillis(),
+            clockSize = CLOCK_MAX_SIZE,
+            clockInitialStart =  false,
+            progressBarSweepAngle = 0f,
+            showOvertime = true,
+            onClockSizeChanged = { },
+            onClockInitialStartChange = { },
+            onProgressBarSweepAngleChange = { },
+            onShowOvertimeChange = { },
+            onProgressBarSweepAngleTargetChange = { },
+            onClockAnimationStateChanged = { }
 
-        RestartButton(
-            modifier = Modifier.align(Alignment.BottomCenter),
-            size = 90.dp,
-            isDarkTheme = viewModel.isDarkTheme
-        ) {
-            ServiceHelper.triggerForegroundService(
-                context = context,
-                action = Constants.ACTION_SERVICE_RESET
-            )
-
-            activity.finish()
-        }
+        )
     }
+
+    RestartButton(
+        modifier = Modifier.align(Alignment.BottomCenter),
+        size = 90.dp,
+        isDarkTheme = isDarkTheme
+    ) {
+        ServiceHelper.triggerForegroundService(
+            context = context,
+            action = Constants.ACTION_SERVICE_RESET
+        )
+
+        activity.finish()
+    }
+}
 }
 
 @Preview(showBackground = true)

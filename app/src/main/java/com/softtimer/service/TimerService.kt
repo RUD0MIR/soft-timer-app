@@ -16,6 +16,7 @@ import android.os.VibrationEffect
 import android.os.Vibrator
 import android.util.Log
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.app.NotificationCompat
@@ -82,9 +83,9 @@ class TimerService : Service() {
         return String.format("%02d", overtimeMillis / 10000000)
     }
 
-    var hState by mutableStateOf(0)
-    var minState by mutableStateOf(0)
-    var sState by mutableStateOf(0)
+    var hState by mutableIntStateOf(0)
+    var minState by mutableIntStateOf(0)
+    var sState by mutableIntStateOf(0)
 
     lateinit var powerManager: PowerManager
     var isScreenOffWhenTimeExpired = false
@@ -253,28 +254,6 @@ class TimerService : Service() {
             Intent(applicationContext, MainActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK
                 startActivity(this)
-            }
-        }
-
-//        scope.launch {
-//            vibratePeriodically(300L, 1100L)
-//        }
-    }
-
-    private suspend fun vibratePeriodically(durationMillis: Long, period: Long) {
-        val vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
-
-        if (Build.VERSION.SDK_INT >= 26) {
-            while (timerState == TimerState.Ringing){
-                vibrator.vibrate(
-                    VibrationEffect.createOneShot(durationMillis,VibrationEffect.DEFAULT_AMPLITUDE)
-                )
-                delay(period)
-            }
-        } else {
-            while (timerState == TimerState.Ringing) {
-                vibrator.vibrate(durationMillis)
-                delay(period)
             }
         }
     }

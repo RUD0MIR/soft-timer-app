@@ -21,6 +21,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -33,6 +34,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.airbnb.lottie.compose.LottieAnimation
 import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.rememberLottieComposition
@@ -44,32 +46,54 @@ import com.softtimer.service.TimerState
 import com.softtimer.ui.theme.Black
 import com.softtimer.ui.theme.DarkGray
 import com.softtimer.ui.theme.LightGray
-import com.softtimer.ui.theme.MID_ANIMATION_DURATION
-import com.softtimer.ui.theme.SHORT_ANIMATION_DURATION
 import com.softtimer.ui.theme.SoftTImerTheme
 import com.softtimer.ui.theme.White
+import com.softtimer.util.Constants
 import com.softtimer.util.Constants.ACTION_SERVICE_RESET
 import com.softtimer.util.Constants.ACTION_SERVICE_START
 import com.softtimer.util.Constants.ACTION_SERVICE_STOP
+import com.softtimer.util.Constants.MID_ANIMATION_DURATION
+import com.softtimer.util.Constants.SHORT_ANIMATION_DURATION
+import kotlinx.coroutines.flow.StateFlow
+import kotlin.time.Duration
 
 private const val TAG = "TimerScreen"
 
 @Composable
 fun TimerScreen(
-    timerService: TimerService,
-    viewModel: TimerViewModel,
+    timerState: TimerState,
+    duration: Duration,
+
+    hState: Int,
+    minState: Int,
+    sState: Int,
+    overtimeMins: Int,
+    overtimeSecs: Int,
+    overtimeMillis: String,
+    hPickerState: Int,
+    minPickerState: Int,
+    sPickerState: Int,
+
+    onTimerServiceHStateChange: (Int) -> Unit, // timerService.hState = viewModel.hPickerState
+    onTimerServiceMinStateChange: (Int) -> Unit, // timerService.minState = viewModel.minPickerState
+    onTimerServiceSStateChange: (Int) -> Unit, // timerService.sState = viewModel.sPickerState
+    onHPickerStateChanged: (Int) -> Unit,
+    onMinPickerStateChanged: (Int) -> Unit,
+    onSecPickerStateChanged: (Int) -> Unit,
+    onSecondReset: (Boolean) -> Unit,
+    onStateReset: () -> Unit,
+    isDarkTheme: StateFlow<Boolean>,
+    onSystemThemeChange: () -> Unit,
 ) {
     var clockStartResetAnimationRunning by rememberSaveable { mutableStateOf(false) }
-    var isDarkTheme = viewModel.isDarkTheme.collectAsState(false).value == true
-
-    val timerState = timerService.timerState
+    val isDarkThemeValue = isDarkTheme.collectAsStateWithLifecycle(false).value
     val context = LocalContext.current
 
     LaunchedEffect(key1 = timerState) {
         if (timerState == TimerState.Idle || timerState == TimerState.Reset) {
-            timerService.hState = viewModel.hPickerState
-            timerService.minState = viewModel.minPickerState
-            timerService.sState = viewModel.sPickerState
+            onTimerServiceHStateChange(hPickerState)
+            onTimerServiceMinStateChange(minPickerState)
+            onTimerServiceSStateChange(sPickerState)
         }
     }
 
@@ -78,7 +102,7 @@ fun TimerScreen(
             .fillMaxSize()
             .background(
                 brush = Brush.linearGradient(
-                    colorStops = if (isDarkTheme)
+                    colorStops = if (isDarkThemeValue)
                         arrayOf(
                             Pair(0.3f, Black),
                             Pair(1f, DarkGray)
@@ -100,31 +124,43 @@ fun TimerScreen(
             val bottomGuideLine = createGuidelineFromBottom(fraction = 0.12f)
             val topGuideLine = createGuidelineFromTop(fraction = 0.16f)
 
+            var clockSize by rememberSaveable {
+                mutableFloatStateOf(Constants.CLOCK_MIN_SIZE)
+            }
+            var clockInitialStart by rememberSaveable {
+                mutableStateOf(true)
+            }
+            var progressBarSweepAngle by rememberSaveable {
+                mutableFloatStateOf(0f)
+            }
+            var showOvertime by rememberSaveable {
+                mutableStateOf(false)
+            }
+
             Clock(
                 modifier = Modifier.constrainAs(clock) {
                     top.linkTo(topGuideLine)
                     start.linkTo(parent.start)
                     end.linkTo(parent.end)
                 },
-                isDarkTheme = isDarkTheme,
+                isDarkTheme = isDarkThemeValue,
                 timerState = timerState,
-                duration = timerService.duration,
-                hState = timerService.hState,
-                minState = timerService.minState,
-                sState = timerService.sState,
-                overtimeMins = timerService.overtimeMins,
-                overtimeSecs = timerService.overtimeSecs,
-                overtimeMillis = timerService.getOvertimeMillis(),
-                clockSize = viewModel.clockSize,
-                clockInitialStart = viewModel.clockInitialStart,
-                progressBarSweepAngle = viewModel.progressBarSweepAngle,
-                showOvertime = viewModel.showOvertime,
-                onClockSizeChanged = {  viewModel.clockSize = it },
-                onClockInitialStartChange = { viewModel.clockInitialStart = it },
-                onProgressBarSweepAngleChange = { viewModel.progressBarSweepAngle = it },
-                onShowOvertimeChange = { viewModel.showOvertime = it },
-                onProgressBarSweepAngleTargetChange = { viewModel.progressBarSweepAngleTarget = it },
-                onClockAnimationStateChanged = { clockStartResetAnimationRunning = it}
+                duration = duration,
+                hState = hState,
+                minState = minState,
+                sState = sState,
+                overtimeMins = overtimeMins,
+                overtimeSecs = overtimeSecs,
+                overtimeMillis = overtimeMillis,
+                onClockStartResetAnimationStateChanged = { clockStartResetAnimationRunning = it},
+                clockSize = clockSize,
+                clockInitialStart = clockInitialStart,
+                progressBarSweepAngle = progressBarSweepAngle,
+                showOvertime = showOvertime,
+                onClockSizeChange = { clockSize = it },
+                onClockInitialStartChange = { clockInitialStart = it },
+                onProgressBarSweepAngleChange = { progressBarSweepAngle = it },
+                onShowOvertimeChange = { showOvertime = it }
             )
 
             PickerSection(
@@ -134,34 +170,21 @@ fun TimerScreen(
                     end.linkTo(parent.end)
                     bottom.linkTo(bottomGuideLine, margin = 18.dp)
                 },
-                isDarkTheme = isDarkTheme,
-                timerState = timerService.timerState,
-                pickerVisibilityValue = viewModel.pickerVisibilityValue,
-                onPickerVisibilityValueChanged = { viewModel.pickerVisibilityValue = it },
-                isVisible = viewModel.isVisible,
-                onVisibilityChanged = { viewModel.isVisible = it },
-                hValue = viewModel.hPickerState,
-                minValue = viewModel.minPickerState,
-                sValue = viewModel.sPickerState,
-                onHPickerStateChanged = { selectedHour ->
-                    timerService.hState = selectedHour
-                    viewModel.hPickerState = selectedHour
-                },
-                onMinPickerStateChanged = { selectedMin ->
-                    timerService.minState = selectedMin
-                    viewModel.minPickerState = selectedMin
-                },
-                onSecPickerStateChanged = { selectedSec ->
-                    timerService.sState = selectedSec
-                    viewModel.sPickerState = selectedSec
-                }
+                isDarkTheme = isDarkThemeValue,
+                timerState = timerState,
+                hValue = hPickerState,
+                minValue = minPickerState,
+                sValue = sPickerState,
+                onHPickerStateChanged = onHPickerStateChanged,
+                onMinPickerStateChanged = onMinPickerStateChanged,
+                onSecPickerStateChanged = onSecPickerStateChanged
             )
         }
 
         ActionsSection(
             modifier = Modifier.align(Alignment.BottomCenter),
             timerState = timerState,
-            isDarkTheme = isDarkTheme,
+            isDarkTheme = isDarkThemeValue,
             onButtonResetClick = {
                 if (
                     timerState == TimerState.Running ||
@@ -173,19 +196,10 @@ fun TimerScreen(
                         context = context,
                         action = ACTION_SERVICE_RESET
                     )
-                    timerService.secondReset = true
+                    onSecondReset(true)
 
                 } else if (timerState == TimerState.Idle) {
-                    viewModel.hPickerState = 0
-                    viewModel.minPickerState = 0
-                    viewModel.sPickerState = 0
-
-                    timerService.apply {
-                        hState = 0
-                        minState = 0
-                        sState = 0
-                        showOvertime = false
-                    }
+                    onStateReset()
                 }
             },
             onButtonPlayPauseClick = {
@@ -198,13 +212,13 @@ fun TimerScreen(
                 }
             },
             onThemeButtonClick = {
-                if(isDarkTheme) {
+                if(isDarkThemeValue) {
                     AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
                 } else {
                     AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
                 }
 
-                isDarkTheme = !isDarkTheme
+                onSystemThemeChange()
             }
         )
     }

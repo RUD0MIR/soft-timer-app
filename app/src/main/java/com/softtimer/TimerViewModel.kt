@@ -24,19 +24,9 @@ class TimerViewModel(application: Application) : AndroidViewModel(application) {
     private var _isDarkTheme = MutableStateFlow(false)
     val isDarkTheme = _isDarkTheme.asStateFlow()
 
-
     var hPickerState by mutableIntStateOf(0)
     var minPickerState by mutableIntStateOf(0)
     var sPickerState by mutableIntStateOf(0)
-
-    var pickerVisibilityValue by mutableFloatStateOf(1f)
-    var isVisible by mutableStateOf(true)
-
-    var clockInitialStart by mutableStateOf(true)
-    var progressBarSweepAngleTarget by mutableFloatStateOf(360f)
-    var progressBarSweepAngle by mutableFloatStateOf(0f)
-    var showOvertime by mutableStateOf(false)
-    var clockSize by mutableFloatStateOf(Constants.CLOCK_MIN_SIZE)
 
     private val repository = DataStoreRepository(application)
 
@@ -60,5 +50,11 @@ class TimerViewModel(application: Application) : AndroidViewModel(application) {
                 SharingStarted.WhileSubscribed(5000L),
                 false
             ).value ?: false
+    }
+
+    fun resetTimerState() {
+        hPickerState = 0
+        minPickerState = 0
+        sPickerState = 0
     }
 }

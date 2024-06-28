@@ -30,6 +30,8 @@ import com.softtimer.util.Constants
 
 private const val TAG = "MainActivity"
 
+//TODO: show dialog about app activity if unused
+//TODO: write some tests
 
 class MainActivity : ComponentActivity() {
     private val viewModel: TimerViewModel by viewModels()
@@ -62,10 +64,14 @@ class MainActivity : ComponentActivity() {
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
             setTurnScreenOn(true)
+            setShowWhenLocked(true)
         } else {
             window.apply {
+                addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED)
                 addFlags(
-                    WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
+                    WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
+                            or WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
+                            or WindowManager.LayoutParams.FLAG_ALLOW_LOCK_WHILE_SCREEN_ON
                 )
             }
         }
@@ -74,12 +80,50 @@ class MainActivity : ComponentActivity() {
             SoftTImerTheme {
                 if (isBound) {
                     TimerScreen(
-                        timerService = timerService,
-                        viewModel = viewModel
+                        timerState = timerService.timerState,
+                        duration = timerService.duration,
+                        hState = timerService.hState,
+                        minState = timerService.minState,
+                        sState = timerService.sState,
+                        overtimeMins = timerService.overtimeMins,
+                        overtimeSecs = timerService.overtimeSecs,
+                        overtimeMillis = timerService.getOvertimeMillis(),
+                        hPickerState = viewModel.hPickerState,
+                        minPickerState = viewModel.minPickerState,
+                        sPickerState = viewModel.sPickerState,
+                        isDarkTheme = viewModel.isDarkTheme,
+                        onSystemThemeChange = viewModel::changeSystemTheme,
+                        onTimerServiceHStateChange = {
+                            timerService.hState = viewModel.hPickerState
+                        },
+                        onTimerServiceMinStateChange = {
+                            timerService.minState = viewModel.minPickerState
+                        },
+                        onTimerServiceSStateChange = {
+                            timerService.sState = viewModel.sPickerState
+                        },
+                        onHPickerStateChanged = { selectedHour ->
+                            timerService.hState = selectedHour
+                            viewModel.hPickerState = selectedHour
+                        },
+                        onMinPickerStateChanged = { selectedMin ->
+                            timerService.minState = selectedMin
+                            viewModel.minPickerState = selectedMin
+                        },
+                        onSecPickerStateChanged = { selectedSec ->
+                            timerService.sState = selectedSec
+                            viewModel.sPickerState = selectedSec
+                        },
+                        onSecondReset = { timerService.secondReset = true },
+                        onStateReset = {
+                            viewModel.resetTimerState()
+                            timerService.resetState()
+                        }
                     )
                 }
             }
         }
+
         requestPermissions(Manifest.permission.POST_NOTIFICATIONS)
     }
 

@@ -1,5 +1,6 @@
 package com.softtimer.ui
 
+import android.content.res.Configuration
 import android.util.Log
 import android.widget.ProgressBar
 import androidx.compose.animation.AnimatedVisibility
@@ -19,6 +20,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -34,6 +37,7 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Color.Companion.Blue
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.layout.ContentScale
@@ -51,6 +55,7 @@ import com.softtimer.util.Constants.MID_ANIMATION_DURATION
 import com.softtimer.util.absPad
 import com.softtimer.util.arcShadow
 import com.softtimer.util.calculateShadowXOffset
+import com.softtimer.util.rectShadow
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -166,51 +171,48 @@ fun Clock(
             contentDescription = null
         )
 
-//        ProgressBar(
-//            isDarkTheme = isDarkTheme,
-//            sweepAngle = progressBarSweepAngle,
-//            diameter = 210f * clockSizeModifier,//210
-//            sizeModifier = clockSizeModifier
-//        )
+        ProgressBar(
+            sweepAngle = progressBarSweepAngle,
+            diameter = 210f * clockSizeModifier,//210
+            sizeModifier = clockSizeModifier
+        )
 
-//        Image(
-//            modifier = Modifier
-//                .size(200.dp * clockSizeModifier)
-//                .offset(x = 5.dp * clockSizeModifier, y = 12.dp * clockSizeModifier),
-//            painter = painterResource(id = if (isDarkTheme) R.drawable.dark_mid_circle_group else R.drawable.mid_circle_group),
-//            contentScale = ContentScale.Crop,
-//            contentDescription = null
-//        )
-//
-//        Indicator(
-//            modifier = Modifier.offset(y = (-76f * clockSizeModifier).dp),
-//            isDarkTheme = isDarkTheme,
-//            sweepAngle = progressBarSweepAngle,
-//            sizeModifier = clockSizeModifier
-//        )
-//
-//        Image(
-//            modifier = Modifier
-//                .size(160.dp * clockSizeModifier)
-//                .offset(x = 10.dp * clockSizeModifier, y = 10.dp * clockSizeModifier),
-//            painter = painterResource(id = if (isDarkTheme) R.drawable.dark_top_circle else R.drawable.top_circle),
-//            contentScale = ContentScale.Crop,
-//            contentDescription = null
-//        )
-//
-//
-//        TimerNumbers(
-//            timerState = timerState,
-//            isDarkTheme = isDarkTheme,
-//            hours = hState.absPad(),
-//            minutes = minState.absPad(),
-//            seconds = sState.absPad(),
-//            showOvertime = showOvertime,
-//            overtimeMins = overtimeMins.absPad(),
-//            overtimeSecs = overtimeSecs.absPad(),
-//            overtimeMillis = overtimeMillis,
-//            sizeModifier = clockSizeModifier
-//        )
+        Image(
+            modifier = Modifier
+                .size(200.dp * clockSizeModifier)
+                .offset(x = 5.dp * clockSizeModifier, y = 12.dp * clockSizeModifier),
+            painter = painterResource(id = if (isDarkTheme) R.drawable.dark_mid_circle_group else R.drawable.mid_circle_group),
+            contentScale = ContentScale.Crop,
+            contentDescription = null
+        )
+
+        Indicator(
+            modifier = Modifier.offset(y = (-76f * clockSizeModifier).dp),
+            sweepAngle = progressBarSweepAngle,
+            sizeModifier = clockSizeModifier
+        )
+
+        Image(
+            modifier = Modifier
+                .size(160.dp * clockSizeModifier)
+                .offset(x = 10.dp * clockSizeModifier, y = 10.dp * clockSizeModifier),
+            painter = painterResource(id = if (isDarkTheme) R.drawable.dark_top_circle else R.drawable.top_circle),
+            contentScale = ContentScale.Crop,
+            contentDescription = null
+        )
+
+
+        TimerNumbers(
+            timerState = timerState,
+            hours = hState.absPad(),
+            minutes = minState.absPad(),
+            seconds = sState.absPad(),
+            showOvertime = showOvertime,
+            overtimeMins = overtimeMins.absPad(),
+            overtimeSecs = overtimeSecs.absPad(),
+            overtimeMillis = overtimeMillis,
+            sizeModifier = clockSizeModifier
+        )
     }
 }
 
@@ -230,7 +232,6 @@ fun BottomCircle(modifier: Modifier = Modifier) {
 @Composable
 fun TimerNumbers(
     timerState: TimerState,
-    isDarkTheme: Boolean,
     hours: String,
     minutes: String,
     seconds: String,
@@ -250,7 +251,7 @@ fun TimerNumbers(
         //Numbers shadow
         Text(
             modifier = Modifier
-                .offset(y = (4f * sizeModifier).dp, x = (1f * sizeModifier).dp),//3
+                .offset(y = (2f * sizeModifier).dp, x = (1f * sizeModifier).dp),//3
             text = if (timerState == TimerState.Ringing) {
                 "00:00"
             } else {
@@ -262,7 +263,7 @@ fun TimerNumbers(
                 }
             },
             fontFamily = Orbitron,
-            color = if (isDarkTheme) FaintShadow1Dark else FaintShadow1Light,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f),
             fontSize = if (isHourVisible)
                 (16f * sizeModifier).sp
             else (20f * sizeModifier).sp//16//20
@@ -281,7 +282,7 @@ fun TimerNumbers(
                 }
             },
             fontFamily = Orbitron,
-            color = if (isDarkTheme) ButtonTextDark else ButtonTextLight,
+            color = MaterialTheme.colorScheme.onSurface,
             fontSize = if (isHourVisible) (16f * sizeModifier).sp else (20f * sizeModifier).sp//16//20
         )
 
@@ -296,7 +297,7 @@ fun TimerNumbers(
                     .offset(x = 23.dp),
                 text = "-$overtimeMins:$overtimeSecs.$overtimeMillis",
                 fontFamily = Orbitron,
-                color = if (isDarkTheme) Orange else Blue,
+                color = MaterialTheme.colorScheme.primary,
                 fontSize = (10f * sizeModifier).sp
             )
         }
@@ -306,15 +307,16 @@ fun TimerNumbers(
 @Composable
 fun ProgressBar(
     sweepAngle: Float,
-    isDarkTheme: Boolean,
     diameter: Float,
     sizeModifier: Float
 ) {
+    val primary = MaterialTheme.colorScheme.primary
+    val surfaceBright = MaterialTheme.colorScheme.surfaceBright
     Canvas(
         modifier = Modifier
             .size(diameter.dp)
             .arcShadow(
-                color = if (isDarkTheme) OrangeLight else BlueLight,
+                color = primary.copy(alpha = 0.5f),
                 startAngle = 0f,
                 useCenter = true,
                 spread = (2f * sizeModifier).dp,//2
@@ -333,19 +335,13 @@ fun ProgressBar(
                     size = Size(width = diameter.dp.toPx(), height = diameter.dp.toPx()),
                     useCenter = true,
                     brush = Brush.sweepGradient(
-                        colors = if (isDarkTheme) {
+                        colors =
                             listOf(
-                                LightOrange,
-                                Orange,
-                                Orange,
+                                primary.copy(alpha = 0.5f),
+                                primary,
+                                primary,
                             )
-                        } else {
-                            listOf(
-                                LightBlue,
-                                Blue,
-                                Blue,
-                            )
-                        },
+                        ,
                         center = center
                     )
                 )
@@ -357,42 +353,11 @@ fun ProgressBar(
                     size = Size(width = diameter.dp.toPx(), height = diameter.dp.toPx()),
                     useCenter = true,
                     brush = Brush.sweepGradient(
-                        colors = if (isDarkTheme) listOf(
-                            Color.Transparent,
-                            Color.Transparent,
-                            OrangeFlash,
-                            Color.Transparent,
-                            Color.Transparent,
-                            Color.Transparent,
-                            Color.Transparent,
-                            Color.Transparent,
-                            Color.Transparent,
-                            Color.Transparent,
-                            Color.Transparent,
-                            Color.Transparent,
-                            Color.Transparent,
-                            Color.Transparent,
-                            Color.Transparent,
-                            Color.Transparent,
-                            Color.Transparent,
-                            Color.Transparent,
-                            Color.Transparent,
-                            Color.Transparent,
-                            Color.Transparent,
-                            Color.Transparent,
-                            Color.Transparent,
-                            Color.Transparent,
-                            Color.Transparent,
-                            Color.Transparent,
-                            Color.Transparent,
-                            Color.Transparent,
-                            Color.Transparent,
-                        )
-                        else
+                        colors =
                             listOf(
                                 Color.Transparent,
                                 Color.Transparent,
-                                BlueFlash,
+                                surfaceBright,
                                 Color.Transparent,
                                 Color.Transparent,
                                 Color.Transparent,
@@ -431,21 +396,12 @@ fun ProgressBar(
                     size = Size(width = diameter.dp.toPx(), height = diameter.dp.toPx()),
                     useCenter = false,
                     brush = Brush.horizontalGradient(
-                        colors = if (isDarkTheme)
-                            listOf(
-                                Orange,
-                                Orange,
-                                MidOrange,
-                                MidOrange,
-                                LightOrange
-                            )
-                        else
                             listOf(
                                 Blue,
                                 Blue,
-                                MidBlue,
-                                MidBlue,
-                                LightBlue
+                                primary,
+                                primary,
+                                primary.copy(alpha = 0.5f)
                             )
                     )
                 )
@@ -457,7 +413,6 @@ fun ProgressBar(
 @Composable
 fun Indicator(
     modifier: Modifier = Modifier,
-    isDarkTheme: Boolean,
     sweepAngle: Float,
     sizeModifier: Float
 ) {
@@ -485,41 +440,35 @@ fun Indicator(
             .size(width = 20.dp * sizeModifier, height = 70.dp * sizeModifier),//100.dp
         contentAlignment = Alignment.Center
     ) {
-        //Indicator shadow
-        Image(
-            modifier = modifier
-                .size(height = 60.dp * sizeModifier, width = 10.dp * sizeModifier)
-                .align(Alignment.BottomEnd)
-                .offset(x = (-5).dp)
-                .offset(
-                    x = shadowOffset.value.dp
-                ),
-            painter = painterResource(id = if (isDarkTheme) R.drawable.dark_indicator_shadow else R.drawable.indicator_shadow),
-            contentScale = ContentScale.FillBounds,
-            contentDescription = null,
-        )
 
         //Indicator
         Box(
             modifier = modifier
-                .background(if (isDarkTheme) Orange else Blue)
+                .rectShadow(
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                    radius = 0.dp,
+                    blurRadius = 2.dp,
+                    offsetY = 10.dp,
+                    offsetX = 12.dp + shadowOffset.value.dp,
+                    spread = 0.dp,
+                    modifier = Modifier
+                )
                 .size(
                     width = (4 * sizeModifier).dp,//4
                     height = (58 * sizeModifier).dp//58
                 )
+                .background(MaterialTheme.colorScheme.primary)
+
         )
     }
 }
 
 @Preview(showBackground = true)
+@Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 fun ClockPreview() {
-    SoftTImerTheme {
-        Column(
-            Modifier
-                .fillMaxSize()
-                .background(Color(0xFFD8D6D6)),
-        ) {
+    SoftTImerTheme(dynamicColor = false) {
+        Surface(color = MaterialTheme.colorScheme.surfaceVariant) {
             Clock(
                 isDarkTheme = false,
                 timerState = TimerState.Running,
@@ -532,7 +481,7 @@ fun ClockPreview() {
                 overtimeMillis = "0",
                 clockSize = CLOCK_MAX_SIZE,
                 clockInitialStart = false,
-                progressBarSweepAngle = 0f,
+                progressBarSweepAngle = 360f,
                 showOvertime = false,
                 onClockSizeChange = {},
                 onClockInitialStartChange = {},
@@ -542,6 +491,6 @@ fun ClockPreview() {
             )
         }
 
-        BottomCircle()
     }
 }
+

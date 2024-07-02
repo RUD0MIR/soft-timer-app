@@ -1,9 +1,5 @@
 package com.softtimer.ui
 
-import android.content.res.Configuration
-import android.icu.util.Calendar
-import android.util.Log
-import android.widget.ProgressBar
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animate
@@ -12,7 +8,6 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,6 +22,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -37,24 +33,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Color.Companion.Blue
-import androidx.compose.ui.graphics.Color.Companion.DarkGray
-import androidx.compose.ui.graphics.Color.Companion.Gray
-import androidx.compose.ui.graphics.Color.Companion.Red
-import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.withTransform
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.softtimer.R
 import com.softtimer.service.TimerState
 import com.softtimer.ui.theme.Orbitron
 import com.softtimer.ui.theme.SoftTImerTheme
@@ -66,7 +53,6 @@ import com.softtimer.util.arcShadow
 import com.softtimer.util.calculateShadowXOffset
 import com.softtimer.util.circleShadow
 import com.softtimer.util.rectShadow
-import java.util.Date
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
@@ -78,8 +64,6 @@ private const val TAG = "Clock1"
 @Composable
 fun Clock(
     modifier: Modifier = Modifier,
-    isDarkTheme: Boolean,
-
     timerState: TimerState,
     duration: Duration,
     hState: Int,
@@ -88,30 +72,36 @@ fun Clock(
     overtimeMins: Int,
     overtimeSecs: Int,
     overtimeMillis: String,
-
-    clockSize: Float,
+    clockSizeModifier: Float,
     clockInitialStart: Boolean,
     progressBarSweepAngle: Float,
     showOvertime: Boolean,
-    onClockSizeChange: (Float) -> Unit,
+    onClockSizeModifierChange: (Float) -> Unit,
     onClockInitialStartChange: (Boolean) -> Unit,
     onProgressBarSweepAngleChange: (Float) -> Unit,
     onShowOvertimeChange: (Boolean) -> Unit,
     onClockStartResetAnimationStateChanged: (Boolean) -> Unit,
 ) {
-    val clockSizeModifier by animateFloatAsState(
-        targetValue = clockSize,
+    val clockSizeModifierValue by animateFloatAsState(
+        targetValue = clockSizeModifier,
         animationSpec = tween(
             durationMillis = MID_ANIMATION_DURATION,
             easing = LinearEasing
         ), label = "clockSizeAnimation"
     )
 
+    val clockSize by remember {
+        derivedStateOf {
+            220.dp * clockSizeModifierValue
+        }
+    }
+
+
     LaunchedEffect(key1 = timerState) {
         when (timerState) {
             TimerState.Idle -> {
                 onClockInitialStartChange(true)
-                onClockSizeChange(CLOCK_MIN_SIZE)
+                onClockSizeModifierChange(CLOCK_MIN_SIZE)
                 onClockStartResetAnimationStateChanged(true)
                 animate(
                     initialValue = progressBarSweepAngle,
@@ -128,7 +118,7 @@ fun Clock(
 
             TimerState.Running -> {
                 if (clockInitialStart) {
-                    onClockSizeChange(CLOCK_MAX_SIZE)
+                    onClockSizeModifierChange(CLOCK_MAX_SIZE)
                     onClockInitialStartChange(false)
                     onShowOvertimeChange(false)
 
@@ -151,7 +141,7 @@ fun Clock(
                 //progress bar animation that running with timer
                 animate(
                     initialValue = progressBarSweepAngle,
-                    targetValue = 0f,
+                    targetValue = -360f,
                     animationSpec = tween(
                         durationMillis = duration.inWholeMilliseconds.toInt(),
                         easing = LinearEasing
@@ -173,27 +163,27 @@ fun Clock(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(260.dp * clockSizeModifier),
+            .size(clockSize),
         contentAlignment = Alignment.Center
     ) {
-        BottomCircle(270.dp * clockSizeModifier)
+        BottomCircle(clockSize)
 
         ProgressBar(
             sweepAngle = progressBarSweepAngle,
-            diameter = 210f * clockSizeModifier,//210
-            sizeModifier = clockSizeModifier
+            size = clockSize * 0.99f,
+            sizeModifier = clockSizeModifierValue
         )
 
-        MidCircleBackgroundGradient(248.dp * clockSizeModifier)
-        MidCircle(circleRadius = 332.dp.value * clockSizeModifier)
+        MidCircleBackgroundGradient(clockSize * 0.84f )
+        MidCircle(size = clockSize * 0.4f)
 
         Indicator(
-            modifier = Modifier.offset(y = (-76f * clockSizeModifier).dp),
+            modifier = Modifier.offset(y = -clockSize * 0.25f),
+            size = clockSize * 0.5f,
             sweepAngle = progressBarSweepAngle,
-            sizeModifier = clockSizeModifier
         )
 
-        FrontCircle(size = 140.dp * clockSizeModifier)
+        FrontCircle(size = clockSize * 0.47f)
 
         TimerNumbers(
             timerState = timerState,
@@ -204,7 +194,7 @@ fun Clock(
             overtimeMins = overtimeMins.absPad(),
             overtimeSecs = overtimeSecs.absPad(),
             overtimeMillis = overtimeMillis,
-            sizeModifier = clockSizeModifier
+            sizeModifier = clockSizeModifierValue
         )
     }
 }
@@ -260,7 +250,6 @@ fun MidCircleBackgroundGradient(size: Dp, modifier: Modifier = Modifier) {
 fun BottomCircle(size: Dp, modifier: Modifier = Modifier) {
     val surface = MaterialTheme.colorScheme.surface
     val surfaceVariant = MaterialTheme.colorScheme.surfaceVariant
-    //270.dp
     Canvas(
         modifier = modifier
             .size(size)
@@ -373,14 +362,15 @@ fun TimerNumbers(
 @Composable
 fun ProgressBar(
     sweepAngle: Float,
-    diameter: Float,
+    size: Dp,
     sizeModifier: Float
 ) {
     val primary = MaterialTheme.colorScheme.primary
+    val surface = MaterialTheme.colorScheme.surface
     val surfaceBright = MaterialTheme.colorScheme.surfaceBright
     Canvas(
         modifier = Modifier
-            .size(diameter.dp)
+            .size(size)
             .arcShadow(
                 color = primary.copy(alpha = 0.5f),
                 startAngle = 0f,
@@ -394,18 +384,19 @@ fun ProgressBar(
             withTransform(
                 { rotate(degrees = 270f, pivot = center) }
             ) {
-                //progress bar itself
+                //progress bar
                 drawArc(
                     startAngle = 0f,
                     sweepAngle = sweepAngle,
-                    size = Size(width = diameter.dp.toPx(), height = diameter.dp.toPx()),
                     useCenter = true,
                     brush = Brush.sweepGradient(
                         colors =
                         listOf(
-                            primary.copy(alpha = 0.5f),
-                            primary,
-                            primary,
+                            surface.copy(alpha = 0.5f),
+                            surface.copy(alpha = 0.3f),
+                            primary.copy(alpha = 0.9f),
+                            primary.copy(alpha = 0.9f),
+                            primary.copy(alpha = 0.9f),
                         ),
                         center = center
                     )
@@ -413,16 +404,16 @@ fun ProgressBar(
 
                 //flash effect
                 drawArc(
-                    startAngle = 10f,
-                    sweepAngle = if (sweepAngle <= 30f) sweepAngle else 30f,
-                    size = Size(width = diameter.dp.toPx(), height = diameter.dp.toPx()),
+                    startAngle = 0f,
+                    sweepAngle = if (sweepAngle <= 30f) sweepAngle else 60f,
                     useCenter = true,
                     brush = Brush.sweepGradient(
                         colors =
                         listOf(
                             Color.Transparent,
-                            Color.Transparent,
+                            surfaceBright.copy(alpha = 0.5f),
                             surfaceBright,
+                            surfaceBright.copy(alpha = 0.5f),
                             Color.Transparent,
                             Color.Transparent,
                             Color.Transparent,
@@ -458,15 +449,14 @@ fun ProgressBar(
                     startAngle = 0f,
                     sweepAngle = sweepAngle,
                     style = Stroke(width = (2 * sizeModifier).dp.toPx()),//2
-                    size = Size(width = diameter.dp.toPx(), height = diameter.dp.toPx()),
                     useCenter = false,
                     brush = Brush.horizontalGradient(
-                        listOf(
-                            Blue,
-                            Blue,
+                        startX = size.toPx() - 600,
+                        colors = listOf(
                             primary,
-                            primary,
-                            primary.copy(alpha = 0.5f)
+                            primary.copy(alpha = 0.5f),
+                            Color.Transparent,
+                            Color.Transparent,
                         )
                     )
                 )
@@ -479,7 +469,7 @@ fun ProgressBar(
 fun Indicator(
     modifier: Modifier = Modifier,
     sweepAngle: Float,
-    sizeModifier: Float
+    size: Dp
 ) {
     var shadowOffsetState by remember {
         mutableFloatStateOf(0f)
@@ -502,28 +492,31 @@ fun Indicator(
     Box(
         modifier = Modifier
             .rotate(sweepAngle)
-            .size(width = 20.dp * sizeModifier, height = 70.dp * sizeModifier),//100.dp
+            .size(width = size, height = size),//100.dp
         contentAlignment = Alignment.Center
     ) {
+        //Indicator shadow
+        Box(
+            modifier = modifier
+                .size(
+                    width = (2).dp,
+                    height = (size)
+                )
+                .offset(x = (-3).dp, y = (-3).dp)
+                .rectShadow(
+                    color = MaterialTheme.colorScheme.onSurface,
+                    blurRadius = 3.dp,
+                )
+        )
 
         //Indicator
         Box(
             modifier = modifier
-                .rectShadow(
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
-                    radius = 0.dp,
-                    blurRadius = 2.dp,
-                    offsetY = 10.dp,
-                    offsetX = 12.dp + shadowOffset.value.dp,
-                    spread = 0.dp,
-                    modifier = Modifier
-                )
                 .size(
-                    width = (4 * sizeModifier).dp,//4
-                    height = (58 * sizeModifier).dp//58
+                    width = (3).dp,//4
+                    height = (size)//58
                 )
                 .background(MaterialTheme.colorScheme.primary)
-
         )
     }
 }
@@ -531,7 +524,7 @@ fun Indicator(
 @Composable
 fun MidCircle(
     modifier: Modifier = Modifier,
-    circleRadius: Float
+    size: Dp
 ) {
     val surfaceVariant = MaterialTheme.colorScheme.surfaceVariant
     val surface = MaterialTheme.colorScheme.surface
@@ -542,60 +535,59 @@ fun MidCircle(
     }
 
     val dividersCount = 100
-    val lineLength = circleRadius * 0.08f
-    val lineThickness = 2.5f
+
+    val lineThickness = size * 0.015f
     val dividersPadding = 4f
 
-    Box(
+    Canvas(
         modifier = modifier
+            .size(size)
     ) {
-        Canvas(
-            modifier = Modifier
-                .fillMaxSize()
-        ) {
-            val width = size.width
-            val height = size.height
-            circleCenter = Offset(x = width / 2f, y = height / 2f)
+        val lineLength = size.toPx() * 0.08f
+        val width = this.size.width
+        val height = this.size.height
 
-            drawCircle(
-                brush = Brush.linearGradient(
-                    colors = listOf(
-                        surface,
-                        surfaceVariant
-                    )
-                ),
-                radius = circleRadius,
-                center = circleCenter
+        circleCenter = Offset(x = width / 2f, y = height / 2f)
+
+        drawCircle(
+            brush = Brush.linearGradient(
+                colors = listOf(
+                    surface,
+                    surfaceVariant
+                )
+            ),
+            radius = size.toPx(),
+            center = circleCenter
+        )
+
+
+        for (i in 0 until dividersCount) {
+            val angleInDegrees = i * 360f / dividersCount
+            val angleInRad = angleInDegrees * PI / 180f + PI / 2f
+
+            val start = Offset(
+                x = ((size.toPx() - dividersPadding) * cos(angleInRad) + circleCenter.x).toFloat(),
+                y = ((size.toPx() - dividersPadding) * sin(angleInRad) + circleCenter.y).toFloat()
             )
 
-
-            for (i in 0 until dividersCount) {
-                val angleInDegrees = i * 360f / dividersCount
-                val angleInRad = angleInDegrees * PI / 180f + PI / 2f
-
-                val start = Offset(
-                    x = ((circleRadius - dividersPadding) * cos(angleInRad) + circleCenter.x).toFloat(),
-                    y = ((circleRadius - dividersPadding) * sin(angleInRad) + circleCenter.y).toFloat()
+            val end = Offset(
+                x = ((size.toPx() - dividersPadding) * cos(angleInRad) + circleCenter.x).toFloat(),
+                y = ((size.toPx() - dividersPadding) * sin(angleInRad) + lineLength + circleCenter.y).toFloat()
+            )
+            rotate(
+                angleInDegrees + 180,
+                pivot = start
+            ) {
+                drawLine(
+                    color = surfaceContainer,
+                    start = start,
+                    end = end,
+                    strokeWidth = lineThickness.toPx()
                 )
-
-                val end = Offset(
-                    x = ((circleRadius - dividersPadding) * cos(angleInRad) + circleCenter.x).toFloat(),
-                    y = ((circleRadius - dividersPadding) * sin(angleInRad) + lineLength + circleCenter.y).toFloat()
-                )
-                rotate(
-                    angleInDegrees + 180,
-                    pivot = start
-                ) {
-                    drawLine(
-                        color = surfaceContainer,
-                        start = start,
-                        end = end,
-                        strokeWidth = lineThickness.dp.toPx()
-                    )
-                }
             }
         }
     }
+
 }
 
 @Preview(showBackground = true)
@@ -604,9 +596,11 @@ fun MidCircle(
 fun ClockPreview() {
     SoftTImerTheme(dynamicColor = false) {
         Surface(color = MaterialTheme.colorScheme.surfaceVariant) {
-            Column(Modifier.padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Column(
+                Modifier
+                    .fillMaxSize()
+                    .padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 Clock(
-                    isDarkTheme = false,
                     timerState = TimerState.Running,
                     duration = Duration.ZERO.plus(5.seconds),
                     hState = 0,
@@ -615,23 +609,16 @@ fun ClockPreview() {
                     overtimeMins = 0,
                     overtimeSecs = 0,
                     overtimeMillis = "0",
-                    clockSize = 1f,
+                    clockSizeModifier = 1f,
                     clockInitialStart = false,
-                    progressBarSweepAngle = 0f,
+                    progressBarSweepAngle = 280f,
                     showOvertime = false,
-                    onClockSizeChange = {},
+                    onClockSizeModifierChange = {},
                     onClockInitialStartChange = {},
                     onProgressBarSweepAngleChange = {},
                     onShowOvertimeChange = {},
                     onClockStartResetAnimationStateChanged = {}
                 )
-
-                Box(modifier = Modifier, contentAlignment = Alignment.Center) {
-                    BottomCircle(270.dp)
-                    MidCircleBackgroundGradient(248.dp)
-                    MidCircle(circleRadius = 332.dp.value)
-                    FrontCircle(size = 140.dp)
-                }
             }
         }
     }

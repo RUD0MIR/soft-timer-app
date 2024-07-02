@@ -77,7 +77,7 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
-            SoftTImerTheme {
+            SoftTImerTheme(dynamicColor = false) {
                 if (isBound) {
                     TimerScreen(
                         timerState = timerService.timerState,

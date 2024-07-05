@@ -8,7 +8,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -18,7 +17,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -40,6 +38,14 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.softtimer.R
 import com.softtimer.service.TimerState
+import com.softtimer.ui.theme.ButtonTextDark
+import com.softtimer.ui.theme.ButtonTextLight
+import com.softtimer.ui.theme.FaintLight
+import com.softtimer.ui.theme.FaintLight1Dark
+import com.softtimer.ui.theme.FaintLight1Light
+import com.softtimer.ui.theme.FaintLightDark
+import com.softtimer.ui.theme.FaintShadow
+import com.softtimer.ui.theme.FaintShadowLight
 import com.softtimer.ui.theme.Orbitron
 import com.softtimer.ui.theme.SoftTImerTheme
 import com.softtimer.util.Constants.MID_ANIMATION_DELAY
@@ -78,6 +84,8 @@ fun PickerSection(
             else -> {}
         }
     }
+
+
 
     Box(
         contentAlignment = Alignment.Center,
@@ -147,9 +155,6 @@ fun StyledNumberPicker(
     Box(
         modifier = modifier.size(width = 90.dp, height = 140.dp),
     ) {
-        val onSurface =  MaterialTheme.colorScheme.onSurface
-        val surfaceBright =  MaterialTheme.colorScheme.surfaceBright
-
         //shadows behind number picker
         Image(
             modifier = Modifier
@@ -167,7 +172,7 @@ fun StyledNumberPicker(
                     .align(Alignment.CenterEnd)
                     .padding(bottom = 29.dp, end = 4.dp),
                 text = ":",
-                color = MaterialTheme.colorScheme.onSurface,
+                color = if (isDarkTheme) ButtonTextDark else ButtonTextLight,
                 fontFamily = Orbitron,
                 fontSize = 18.sp,
                 fontWeight = FontWeight.SemiBold,
@@ -200,8 +205,8 @@ fun StyledNumberPicker(
                 update = {
                     it.value = pickerValue
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                        it.textColor = onSurface.value.toInt()
-
+                        it.textColor =
+                            if (isDarkTheme) ButtonTextDark.hashCode() else ButtonTextLight.hashCode()
                     }
                 }
             )
@@ -217,7 +222,7 @@ fun StyledNumberPicker(
                     brush = Brush.verticalGradient(
                         colors = listOf(
                             Color.Transparent,
-                            onSurface.copy(alpha = 0.1f),
+                            if (isDarkTheme) FaintShadow else FaintShadowLight,
                             Color.Transparent
                         )
                     )
@@ -235,7 +240,8 @@ fun StyledNumberPicker(
                     brush = Brush.verticalGradient(
                         colors = listOf(
                             Color.Transparent,
-                            surfaceBright,
+                            if (isDarkTheme) FaintLight1Dark else FaintLight1Light,
+                            if (isDarkTheme) FaintLightDark else FaintLight,
                             Color.Transparent
                         ),
                     )
@@ -248,7 +254,7 @@ fun StyledNumberPicker(
             text = name,
             fontFamily = Orbitron,
             fontSize = 16.sp,
-            color = MaterialTheme.colorScheme.onSurface,
+            color = if (isDarkTheme) ButtonTextDark else ButtonTextLight,
             fontWeight = FontWeight.SemiBold
         )
     }
@@ -257,22 +263,6 @@ fun StyledNumberPicker(
 @Preview(showBackground = true)
 @Composable
 fun TestPreview() {
-    SoftTImerTheme(dynamicColor = false) {
-        Box(modifier = Modifier
-            .background(MaterialTheme.colorScheme.surfaceVariant)
-            .padding(32.dp)
-        ) {
-            PickerSection(
-                timerState = TimerState.Idle,
-                isDarkTheme = false,
-                hValue = 0,
-                minValue = 0,
-                sValue = 0,
-                onHPickerStateChanged = {},
-                onMinPickerStateChanged = {}
-            ) {
-
-            }
-        }
+    SoftTImerTheme {
     }
 }

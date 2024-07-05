@@ -1,13 +1,25 @@
 package com.softtimer.ui
 
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animate
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -17,18 +29,31 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.airbnb.lottie.compose.LottieAnimation
+import com.airbnb.lottie.compose.LottieCompositionSpec
+import com.airbnb.lottie.compose.rememberLottieComposition
+import com.softtimer.R
+import com.softtimer.TimerViewModel
 import com.softtimer.service.ServiceHelper
+import com.softtimer.service.TimerService
 import com.softtimer.service.TimerState
+import com.softtimer.ui.theme.Black
+import com.softtimer.ui.theme.DarkGray
+import com.softtimer.ui.theme.LightGray
 import com.softtimer.ui.theme.SoftTImerTheme
+import com.softtimer.ui.theme.White
 import com.softtimer.util.Constants
 import com.softtimer.util.Constants.ACTION_SERVICE_RESET
 import com.softtimer.util.Constants.ACTION_SERVICE_START
 import com.softtimer.util.Constants.ACTION_SERVICE_STOP
-import kotlinx.coroutines.flow.MutableStateFlow
+import com.softtimer.util.Constants.MID_ANIMATION_DURATION
+import com.softtimer.util.Constants.SHORT_ANIMATION_DURATION
 import kotlinx.coroutines.flow.StateFlow
 import kotlin.time.Duration
 
@@ -49,9 +74,9 @@ fun TimerScreen(
     minPickerState: Int,
     sPickerState: Int,
 
-    onTimerServiceHStateChange: (Int) -> Unit,
-    onTimerServiceMinStateChange: (Int) -> Unit,
-    onTimerServiceSStateChange: (Int) -> Unit,
+    onTimerServiceHStateChange: (Int) -> Unit, // timerService.hState = viewModel.hPickerState
+    onTimerServiceMinStateChange: (Int) -> Unit, // timerService.minState = viewModel.minPickerState
+    onTimerServiceSStateChange: (Int) -> Unit, // timerService.sState = viewModel.sPickerState
     onHPickerStateChanged: (Int) -> Unit,
     onMinPickerStateChanged: (Int) -> Unit,
     onSecPickerStateChanged: (Int) -> Unit,
@@ -72,19 +97,22 @@ fun TimerScreen(
         }
     }
 
-    val mainSurfaceGradient = Brush.linearGradient(
-        colorStops =
-        arrayOf(
-            Pair(0.3f, MaterialTheme.colorScheme.surface),
-            Pair(1f, MaterialTheme.colorScheme.surfaceVariant)
-        )
-    )
-
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(
-                brush = mainSurfaceGradient
+                brush = Brush.linearGradient(
+                    colorStops = if (isDarkThemeValue)
+                        arrayOf(
+                            Pair(0.3f, Black),
+                            Pair(1f, DarkGray)
+                        )
+                    else
+                        arrayOf(
+                            Pair(0.3f, White),
+                            Pair(1f, LightGray)
+                        )
+                )
             )
             .padding(bottom = 64.dp),
         contentAlignment = Alignment.Center
@@ -124,7 +152,7 @@ fun TimerScreen(
                 overtimeMins = overtimeMins,
                 overtimeSecs = overtimeSecs,
                 overtimeMillis = overtimeMillis,
-                onClockStartResetAnimationStateChanged = { clockStartResetAnimationRunning = it },
+                onClockStartResetAnimationStateChanged = { clockStartResetAnimationRunning = it},
                 clockSize = clockSize,
                 clockInitialStart = clockInitialStart,
                 progressBarSweepAngle = progressBarSweepAngle,
@@ -153,7 +181,7 @@ fun TimerScreen(
             )
         }
 
-        ButtonSection(
+        ActionsSection(
             modifier = Modifier.align(Alignment.BottomCenter),
             timerState = timerState,
             isDarkTheme = isDarkThemeValue,
@@ -184,7 +212,7 @@ fun TimerScreen(
                 }
             },
             onThemeButtonClick = {
-                if (isDarkThemeValue) {
+                if(isDarkThemeValue) {
                     AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
                 } else {
                     AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
@@ -196,36 +224,277 @@ fun TimerScreen(
     }
 }
 
+@Composable
+fun ActionsSection(
+    modifier: Modifier = Modifier,
+    timerState: TimerState,
+    isDarkTheme: Boolean,
+    onButtonResetClick: () -> Unit,
+    onButtonPlayPauseClick: () -> Unit,
+    onThemeButtonClick: () -> Unit,
+) {
+    Row(
+        modifier.fillMaxWidth(0.9f),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceEvenly
+    ) {
+        //restart button
+        RestartButton(
+            size = if (timerState == TimerState.Ringing) 90.dp else 50.dp,
+            isDarkTheme = isDarkTheme
+        ) {
+            onButtonResetClick()
+        }
 
+        if (timerState != TimerState.Ringing) {
+            PlayPauseButton(
+                size = 90.dp,
+                timerState = timerState,
+                isDarkTheme = isDarkTheme
+            ) {
+                onButtonPlayPauseClick()
+            }
+
+            ThemeButton(size = 50.dp, isDarkTheme = isDarkTheme) {
+                onThemeButtonClick()
+            }
+        }
+    }
+}
+
+@Composable
+fun RestartButton(
+    modifier: Modifier = Modifier,
+    isDarkTheme: Boolean,
+    size: Dp,
+    onClick: () -> Unit
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val restartAnimation by rememberLottieComposition(
+        if (isDarkTheme) LottieCompositionSpec.RawRes(R.raw.dark_anim_reset)
+        else LottieCompositionSpec.RawRes(R.raw.anim_reset)
+    )
+    var isPlaying by remember { mutableStateOf(false) }
+    var progress by remember { mutableStateOf(1f) }
+
+    LaunchedEffect(key1 = isPlaying) {
+        if (isPlaying) {
+            var targetValue = 1f
+
+            animate(
+                initialValue = progress,
+                targetValue = targetValue,
+                animationSpec = tween(
+                    durationMillis = MID_ANIMATION_DURATION,
+                    easing = LinearEasing
+                )
+            ) { value, _ ->
+                progress = value
+            }
+
+            targetValue = 0.5f
+
+            animate(
+                initialValue = 0f,
+                targetValue = targetValue,
+                animationSpec = tween(
+                    durationMillis = MID_ANIMATION_DURATION,
+                    easing = LinearEasing
+                )
+            ) { value, _ ->
+                progress = value
+                if (value == targetValue) isPlaying = false
+            }
+        } else {
+            progress = 0.5f
+        }
+    }
+
+    Box(
+        modifier = modifier
+            .clickable(interactionSource = interactionSource, indication = null) {
+                onClick()
+                isPlaying = true
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        Image(
+            modifier = Modifier.size(size),
+            painter = painterResource(id = if (isDarkTheme) R.drawable.dark_button else R.drawable.button),
+            contentDescription = null
+        )
+
+        LottieAnimation(
+            modifier = Modifier
+                .size(size * 0.3f)
+                .offset(x = (-1).dp, y = (-0.3).dp),
+            composition = restartAnimation,
+            progress = { progress }
+        )
+    }
+}
+
+@Composable
+fun PlayPauseButton(
+    size: Dp,
+    isDarkTheme: Boolean,
+    timerState: TimerState,
+    onClick: () -> Unit
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    var isAnimPlaying by remember { mutableStateOf(false) }
+    val pauseAnimComposition by rememberLottieComposition(
+        if (isDarkTheme) LottieCompositionSpec.RawRes(R.raw.dark_anim_pause)
+        else LottieCompositionSpec.RawRes(R.raw.anim_pause)
+    )
+    var progress by remember {
+        mutableStateOf(0f)
+    }
+
+    LaunchedEffect(key1 = isAnimPlaying, key2 = timerState) {
+        if (timerState == TimerState.Running) {
+            //from pause icon to play icon animation
+            val targetValue = 1f
+            animate(
+                initialValue = progress,
+                targetValue = targetValue,
+                animationSpec = tween(
+                    durationMillis = SHORT_ANIMATION_DURATION,
+                    easing = LinearEasing
+                )
+            ) { value, _ ->
+                progress = value
+                if (value == targetValue) isAnimPlaying = false
+            }
+        } else if (timerState == TimerState.Idle || timerState == TimerState.Paused) {
+            //from play icon to pause icon animation
+            val targetValue = 0f
+            animate(
+                initialValue = progress,
+                targetValue = targetValue,
+                animationSpec = tween(
+                    durationMillis = SHORT_ANIMATION_DURATION,
+                    easing = LinearEasing
+                )
+            ) { value, _ ->
+                progress = value
+                if (value == targetValue) isAnimPlaying = false
+            }
+        }
+    }
+
+    Box(
+        modifier = Modifier
+            .clickable(interactionSource = interactionSource, indication = null) {
+                if (!isAnimPlaying && timerState != TimerState.Reset) {
+                    isAnimPlaying = true
+                    onClick()
+                }
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        Image(
+            modifier = Modifier.size(size),
+            painter = painterResource(id = if (isDarkTheme) R.drawable.dark_button else R.drawable.button),
+            contentDescription = null
+        )
+
+        LottieAnimation(
+            modifier = Modifier
+                .size(20.dp)
+                .offset(x = (-1).dp, y = (-0.3).dp),
+            composition = pauseAnimComposition,
+            progress = { progress }
+        )
+    }
+}
+
+@Composable
+fun ThemeButton(
+    size: Dp,
+    isDarkTheme: Boolean,
+    onClick: () -> Unit
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    var isLightTheme by remember { mutableStateOf(true) }
+    var isAnimPlaying by remember { mutableStateOf(false) }
+    val composition by rememberLottieComposition(
+        if (isDarkTheme) LottieCompositionSpec.RawRes(R.raw.dark_anim_moon_sun)
+        else LottieCompositionSpec.RawRes(R.raw.anim_moon_sun)
+    )
+
+    var progress by remember {
+        mutableStateOf(0.4f)
+    }
+
+    LaunchedEffect(key1 = isAnimPlaying) {
+        if (isAnimPlaying) {
+            if (isLightTheme) {
+                val targetValue = 0.5f
+                progress = 0f
+
+                animate(
+                    initialValue = progress,
+                    targetValue = targetValue,
+                    animationSpec = tween(
+                        durationMillis = MID_ANIMATION_DURATION,
+                        easing = LinearEasing
+                    )
+                ) { value, _ ->
+                    progress = value
+                    if (value == targetValue) isAnimPlaying = false
+                }
+
+            } else {
+                val targetValue = 1f
+                progress = 0.5f
+
+                animate(
+                    initialValue = progress,
+                    targetValue = 1f,
+                    animationSpec = tween(
+                        durationMillis = MID_ANIMATION_DURATION,
+                        easing = LinearEasing
+                    )
+                ) { value, _ ->
+                    progress = value
+                    if (value == targetValue) isAnimPlaying = false
+                }
+            }
+        }
+    }
+
+    Box(
+        modifier = Modifier
+            .clickable(interactionSource = interactionSource, indication = null) {
+                if (!isAnimPlaying) {
+                    onClick()
+                    isAnimPlaying = true
+                    isLightTheme = !isLightTheme
+                }
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        Image(
+            modifier = Modifier.size(size),
+            painter = painterResource(id = if (isDarkTheme) R.drawable.dark_button else R.drawable.button),
+            contentDescription = null
+        )
+
+        LottieAnimation(
+            modifier = Modifier
+                .size(48.dp)
+                .offset(x = (-1).dp, y = (-0.3).dp),
+            composition = composition,
+            progress = { progress }
+        )
+    }
+}
 
 
 @Preview(showBackground = true)
 @Composable
 fun TimerScreenPreview() {
-    SoftTImerTheme(dynamicColor = false) {
-        TimerScreen(
-            timerState = TimerState.Reset,
-            duration = Duration.ZERO,
-            hState = 0,
-            minState = 0,
-            sState = 0,
-            overtimeMins = 0,
-            overtimeSecs = 0,
-            overtimeMillis = "",
-            hPickerState = 0,
-            minPickerState = 0,
-            sPickerState = 0,
-            onTimerServiceHStateChange = {},
-            onTimerServiceMinStateChange = {},
-            onTimerServiceSStateChange = {},
-            onHPickerStateChanged = {},
-            onMinPickerStateChanged = {},
-            onSecPickerStateChanged = {},
-            onSecondReset = {},
-            onStateReset = {},
-            isDarkTheme = MutableStateFlow(false),
-            onSystemThemeChange = {}
-
-        )
+    SoftTImerTheme {
     }
 }

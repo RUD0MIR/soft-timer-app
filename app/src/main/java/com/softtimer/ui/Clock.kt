@@ -1,5 +1,6 @@
 package com.softtimer.ui
 
+import android.widget.ProgressBar
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animate
@@ -74,11 +75,11 @@ fun Clock(
     overtimeMillis: String,
     clockSizeModifier: Float,
     clockInitialStart: Boolean,
-    progressBarSweepAngle: Float,
+    progressBarValue: Float,
     showOvertime: Boolean,
     onClockSizeModifierChange: (Float) -> Unit,
     onClockInitialStartChange: (Boolean) -> Unit,
-    onProgressBarSweepAngleChange: (Float) -> Unit,
+    onProgressBarValueChange: (Float) -> Unit,
     onShowOvertimeChange: (Boolean) -> Unit,
     onClockStartResetAnimationStateChanged: (Boolean) -> Unit,
 ) {
@@ -104,14 +105,14 @@ fun Clock(
                 onClockSizeModifierChange(CLOCK_MIN_SIZE)
                 onClockStartResetAnimationStateChanged(true)
                 animate(
-                    initialValue = progressBarSweepAngle,
+                    initialValue = progressBarValue,
                     targetValue = 0f,
                     animationSpec = tween(
                         durationMillis = MID_ANIMATION_DURATION,
                         easing = LinearEasing
                     )
                 ) { value, _ ->
-                    onProgressBarSweepAngleChange(value)
+                    onProgressBarValueChange(value)
                 }
                 onClockStartResetAnimationStateChanged(false)
             }
@@ -126,34 +127,34 @@ fun Clock(
 
                     //progress bar animation that started when timer does
                     animate(
-                        initialValue = progressBarSweepAngle,
-                        targetValue = 360f,
+                        initialValue = progressBarValue,
+                        targetValue = 1f,
                         animationSpec = tween(
                             durationMillis = MID_ANIMATION_DURATION,
                             easing = LinearEasing
                         )
                     ) { value, _ ->
-                        onProgressBarSweepAngleChange(value)
+                        onProgressBarValueChange(value)
                     }
 
                     onClockStartResetAnimationStateChanged(false)
                 }
                 //progress bar animation that running with timer
                 animate(
-                    initialValue = progressBarSweepAngle,
-                    targetValue = -360f,
+                    initialValue = progressBarValue,
+                    targetValue = 1f, //-360
                     animationSpec = tween(
                         durationMillis = duration.inWholeMilliseconds.toInt(),
                         easing = LinearEasing
                     )
                 ) { value, _ ->
-                    onProgressBarSweepAngleChange(value)
+                    onProgressBarValueChange(value)
                 }
             }
 
             TimerState.Ringing -> {
                 onShowOvertimeChange(true)
-                onProgressBarSweepAngleChange(0f)
+                onProgressBarValueChange(0f)
             }
 
             else -> {}
@@ -168,10 +169,10 @@ fun Clock(
     ) {
         BottomCircle(clockSize)
 
-        ProgressBar(
-            sweepAngle = progressBarSweepAngle,
-            size = clockSize * 0.99f,
-            sizeModifier = clockSizeModifierValue
+        CustomProgressIndicator(
+            modifier = Modifier.size(clockSize * 0.91f),
+            progress = { progressBarValue },
+            strokeWidth = 20.dp
         )
 
         MidCircleBackgroundGradient(clockSize * 0.84f )
@@ -180,7 +181,7 @@ fun Clock(
         Indicator(
             modifier = Modifier.offset(y = -clockSize * 0.25f),
             size = clockSize * 0.5f,
-            sweepAngle = progressBarSweepAngle,
+            progressBarValue = progressBarValue
         )
 
         FrontCircle(size = clockSize * 0.47f)
@@ -360,165 +361,59 @@ fun TimerNumbers(
 }
 
 @Composable
-fun ProgressBar(
-    sweepAngle: Float,
-    size: Dp,
-    sizeModifier: Float
-) {
-    val primary = MaterialTheme.colorScheme.primary
-    val surface = MaterialTheme.colorScheme.surface
-    val surfaceBright = MaterialTheme.colorScheme.surfaceBright
-    Canvas(
-        modifier = Modifier
-            .size(size)
-            .arcShadow(
-                color = primary.copy(alpha = 0.5f),
-                startAngle = 0f,
-                useCenter = true,
-                spread = (2f * sizeModifier).dp,//2
-                sweepAngle = sweepAngle,
-                blurRadius = (4f * sizeModifier).dp,//4
-                rotateAngle = 270f
-            ),
-        onDraw = {
-            withTransform(
-                { rotate(degrees = 270f, pivot = center) }
-            ) {
-                //progress bar
-                drawArc(
-                    startAngle = 0f,
-                    sweepAngle = sweepAngle,
-                    useCenter = true,
-                    brush = Brush.sweepGradient(
-                        colors =
-                        listOf(
-                            surface.copy(alpha = 0.5f),
-                            surface.copy(alpha = 0.3f),
-                            primary.copy(alpha = 0.9f),
-                            primary.copy(alpha = 0.9f),
-                            primary.copy(alpha = 0.9f),
-                        ),
-                        center = center
-                    )
-                )
-
-                //flash effect
-                drawArc(
-                    startAngle = 0f,
-                    sweepAngle = if (sweepAngle <= 30f) sweepAngle else 60f,
-                    useCenter = true,
-                    brush = Brush.sweepGradient(
-                        colors =
-                        listOf(
-                            Color.Transparent,
-                            surfaceBright.copy(alpha = 0.5f),
-                            surfaceBright,
-                            surfaceBright.copy(alpha = 0.5f),
-                            Color.Transparent,
-                            Color.Transparent,
-                            Color.Transparent,
-                            Color.Transparent,
-                            Color.Transparent,
-                            Color.Transparent,
-                            Color.Transparent,
-                            Color.Transparent,
-                            Color.Transparent,
-                            Color.Transparent,
-                            Color.Transparent,
-                            Color.Transparent,
-                            Color.Transparent,
-                            Color.Transparent,
-                            Color.Transparent,
-                            Color.Transparent,
-                            Color.Transparent,
-                            Color.Transparent,
-                            Color.Transparent,
-                            Color.Transparent,
-                            Color.Transparent,
-                            Color.Transparent,
-                            Color.Transparent,
-                            Color.Transparent,
-                            Color.Transparent,
-                            Color.Transparent,
-                        ),
-                    ),
-                )
-
-                //line around progress bar
-                drawArc(
-                    startAngle = 0f,
-                    sweepAngle = sweepAngle,
-                    style = Stroke(width = (2 * sizeModifier).dp.toPx()),//2
-                    useCenter = false,
-                    brush = Brush.horizontalGradient(
-                        startX = size.toPx() - 600,
-                        colors = listOf(
-                            primary,
-                            primary.copy(alpha = 0.5f),
-                            Color.Transparent,
-                            Color.Transparent,
-                        )
-                    )
-                )
-            }
-        }
-    )
-}
-
-@Composable
 fun Indicator(
     modifier: Modifier = Modifier,
-    sweepAngle: Float,
+    progressBarValue: Float,
     size: Dp
 ) {
-    var shadowOffsetState by remember {
-        mutableFloatStateOf(0f)
-    }
-
-    val shadowOffset = animateFloatAsState(
-        targetValue = shadowOffsetState,
-        animationSpec = tween(easing = LinearEasing), label = "indicatorAnimation"
-    )
-
-    LaunchedEffect(key1 = sweepAngle) {
-        shadowOffsetState = calculateShadowXOffset(
-            sweepAngle = sweepAngle,
-            maxOffset = 5f,//8
-            minOffset = -5f,//-10
-            lightSourceOffset = 345f
-        )
-    }
-
-    Box(
-        modifier = Modifier
-            .rotate(sweepAngle)
-            .size(width = size, height = size),//100.dp
-        contentAlignment = Alignment.Center
-    ) {
-        //Indicator shadow
-        Box(
-            modifier = modifier
-                .size(
-                    width = (2).dp,
-                    height = (size)
-                )
-                .offset(x = (-3).dp, y = (-3).dp)
-                .rectShadow(
-                    color = MaterialTheme.colorScheme.onSurface,
-                    blurRadius = 3.dp,
-                )
-        )
-
-        //Indicator
-        Box(
-            modifier = modifier
-                .size(
-                    width = (3).dp,//4
-                    height = (size)//58
-                )
-                .background(MaterialTheme.colorScheme.primary)
-        )
-    }
+//    var shadowOffsetState by remember {
+//        mutableFloatStateOf(0f)
+//    }
+//
+//    val shadowOffset = animateFloatAsState(
+//        targetValue = shadowOffsetState,
+//        animationSpec = tween(easing = LinearEasing), label = "indicatorAnimation"
+//    )
+//
+//    LaunchedEffect(key1 = sweepAngle) {
+//        shadowOffsetState = calculateShadowXOffset(
+//            sweepAngle = sweepAngle,
+//            maxOffset = 5f,//8
+//            minOffset = -5f,//-10
+//            lightSourceOffset = 345f
+//        )
+//    }
+//
+//    Box(
+//        modifier = Modifier
+//            .rotate(sweepAngle)
+//            .size(width = size, height = size),//100.dp
+//        contentAlignment = Alignment.Center
+//    ) {
+//        //Indicator shadow
+//        Box(
+//            modifier = modifier
+//                .size(
+//                    width = (2).dp,
+//                    height = (size)
+//                )
+//                .offset(x = (-3).dp, y = (-3).dp)
+//                .rectShadow(
+//                    color = MaterialTheme.colorScheme.onSurface,
+//                    blurRadius = 3.dp,
+//                )
+//        )
+//
+//        //Indicator
+//        Box(
+//            modifier = modifier
+//                .size(
+//                    width = (3).dp,//4
+//                    height = (size)//58
+//                )
+//                .background(MaterialTheme.colorScheme.primary)
+//        )
+//    }
 }
 
 @Composable
@@ -591,7 +486,6 @@ fun MidCircle(
 }
 
 @Preview(showBackground = true)
-//@Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 fun ClockPreview() {
     SoftTImerTheme(dynamicColor = false) {
@@ -611,11 +505,11 @@ fun ClockPreview() {
                     overtimeMillis = "0",
                     clockSizeModifier = 1f,
                     clockInitialStart = false,
-                    progressBarSweepAngle = 280f,
+                    progressBarValue = 1f,
                     showOvertime = false,
                     onClockSizeModifierChange = {},
                     onClockInitialStartChange = {},
-                    onProgressBarSweepAngleChange = {},
+                    onProgressBarValueChange = {},
                     onShowOvertimeChange = {},
                     onClockStartResetAnimationStateChanged = {}
                 )

@@ -101,8 +101,8 @@ fun TimerScreen(
             var clockInitialStart by rememberSaveable {
                 mutableStateOf(true)
             }
-            var progressBarSweepAngle by rememberSaveable {
-                mutableFloatStateOf(0f)
+            var progressBarValue by rememberSaveable {
+                mutableFloatStateOf(1f)
             }
             var showOvertime by rememberSaveable {
                 mutableStateOf(false)
@@ -125,11 +125,11 @@ fun TimerScreen(
                 onClockStartResetAnimationStateChanged = { clockStartResetAnimationRunning = it },
                 clockSizeModifier = clockSizeModifier,
                 clockInitialStart = clockInitialStart,
-                progressBarSweepAngle = progressBarSweepAngle,
+                progressBarValue = progressBarValue,
                 showOvertime = showOvertime,
                 onClockSizeModifierChange = { clockSizeModifier = it },
                 onClockInitialStartChange = { clockInitialStart = it },
-                onProgressBarSweepAngleChange = { progressBarSweepAngle = it },
+                onProgressBarValueChange = { progressBarValue = it },
                 onShowOvertimeChange = { showOvertime = it }
             )
 

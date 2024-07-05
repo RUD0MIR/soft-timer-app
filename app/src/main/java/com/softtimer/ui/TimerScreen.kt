@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -63,7 +62,6 @@ fun TimerScreen(
     viewModel: TimerViewModel,
 ) {
     var clockStartResetAnimationRunning by rememberSaveable { mutableStateOf(false) }
-    var isDarkTheme = viewModel.isDarkTheme.collectAsState(false).value == true
 
     val timerState = timerService.timerState
     val context = LocalContext.current
@@ -81,7 +79,7 @@ fun TimerScreen(
             .fillMaxSize()
             .background(
                 brush = Brush.linearGradient(
-                    colorStops = if (isDarkTheme)
+                    colorStops = if (viewModel.isDarkTheme)
                         arrayOf(
                             Pair(0.3f, Black),
                             Pair(1f, DarkGray)
@@ -109,7 +107,7 @@ fun TimerScreen(
                     start.linkTo(parent.start)
                     end.linkTo(parent.end)
                 },
-                isDarkTheme = isDarkTheme,
+                isDarkTheme = viewModel.isDarkTheme,
                 timerService = timerService,
                 viewModel = viewModel,
                 clockSize = viewModel.clockSize,
@@ -124,7 +122,7 @@ fun TimerScreen(
                     end.linkTo(parent.end)
                     bottom.linkTo(bottomGuideLine, margin = 18.dp)
                 },
-                isDarkTheme = isDarkTheme,
+                isDarkTheme = viewModel.isDarkTheme,
                 timerState = timerService.timerState,
                 pickerVisibilityValue = viewModel.pickerVisibilityValue,
                 onPickerVisibilityValueChanged = { viewModel.pickerVisibilityValue = it },
@@ -151,7 +149,7 @@ fun TimerScreen(
         ActionsSection(
             modifier = Modifier.align(Alignment.BottomCenter),
             timerState = timerState,
-            isDarkTheme = isDarkTheme,
+            isDarkTheme = viewModel.isDarkTheme,
             onButtonResetClick = {
                 if (
                     timerState == TimerState.Running ||
@@ -187,14 +185,19 @@ fun TimerScreen(
                     )
                 }
             },
-            onThemeButtonClick = {
-                if(isDarkTheme) {
+            onButtonThemeClick = {
+                if(viewModel.isDarkTheme) {
                     AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
                 } else {
                     AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
-                }
 
-                isDarkTheme = !isDarkTheme
+                }
+                val theme = context.theme
+                val array = theme.obtainStyledAttributes(R.style.Theme_SoftTImer, intArrayOf(android.R.attr.textColor))
+                val currentTextColor = array.getColor(0, 0)
+
+                val newTextColor = ContextCompat.getColor(context, R.color.white)
+                viewModel.isDarkTheme = !viewModel.isDarkTheme
             }
         )
     }
@@ -207,7 +210,7 @@ fun ActionsSection(
     isDarkTheme: Boolean,
     onButtonResetClick: () -> Unit,
     onButtonPlayPauseClick: () -> Unit,
-    onThemeButtonClick: () -> Unit,
+    onButtonThemeClick: () -> Unit,
 ) {
     Row(
         modifier.fillMaxWidth(0.9f),
@@ -232,7 +235,7 @@ fun ActionsSection(
             }
 
             ThemeButton(size = 50.dp, isDarkTheme = isDarkTheme) {
-                onThemeButtonClick()
+                onButtonThemeClick()
             }
         }
     }

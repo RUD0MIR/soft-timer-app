@@ -12,7 +12,6 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
-import com.softtimer.repository.DataStoreKeys.IS_DARK_THEME
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
@@ -24,13 +23,13 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(na
 class DataStoreRepository(context: Context) {
     private val dataStore = context.dataStore
 
-    suspend fun saveThemeState(isDarkTheme: Boolean){
+    suspend fun <T>saveToDataStore(key: Preferences.Key<T>, value: T){
         dataStore.edit { preference ->
-            preference[IS_DARK_THEME] = isDarkTheme
+            preference[key] = value
         }
     }
 
-    fun isDarkTheme(): Flow<Boolean?> {
+    suspend fun <T> readFromDataStore(key: Preferences.Key<T>): Flow<T?> {
        return dataStore.data
             .catch { exception ->
                 if(exception is IOException){
@@ -41,14 +40,14 @@ class DataStoreRepository(context: Context) {
                 }
             }
             .map { preference ->
-                val value = preference[IS_DARK_THEME]
+                val value = preference[key]
                 value
             }
     }
 }
 
-
-
 object DataStoreKeys {
-    val IS_DARK_THEME = booleanPreferencesKey("is_dark_theme")
+    val LAST_HOUR = intPreferencesKey("last_hour")
+    val LAST_MIN = intPreferencesKey("last_minute")
+    val LAST_SEC = intPreferencesKey("last_second")
 }

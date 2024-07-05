@@ -57,9 +57,6 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        viewModel.setSystemThemeFromDataStore()
-
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
             setTurnScreenOn(true)
         } else {
@@ -69,7 +66,6 @@ class MainActivity : ComponentActivity() {
                 )
             }
         }
-
         setContent {
             SoftTImerTheme {
                 if (isBound) {
@@ -98,7 +94,5 @@ class MainActivity : ComponentActivity() {
         super.onStop()
         unbindService(connection)
         isBound = false
-
-        viewModel.saveThemeStateToDataStore()
     }
 }

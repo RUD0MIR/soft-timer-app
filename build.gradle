@@ -1,11 +1,9 @@
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-
 buildscript {
     dependencies {
         classpath libs.hilt.android.gradle.plugin
     }
     ext {
-        kotlin_version = libs.versions.kotlin
+        kotlin_version = '2.0.0'
     }
 }
 
@@ -14,5 +12,4 @@ plugins {
     alias libs.plugins.com.android.library apply false
     alias libs.plugins.org.jetbrains.kotlin.android apply false
     alias libs.plugins.com.google.devtools.ksp apply false
-    alias libs.plugins.compose.compiler apply false
 }

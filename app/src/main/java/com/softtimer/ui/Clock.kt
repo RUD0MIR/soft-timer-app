@@ -34,6 +34,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.softtimer.R
+import com.softtimer.TimerViewModel
+import com.softtimer.service.TimerService
 import com.softtimer.service.TimerState
 import com.softtimer.ui.theme.ButtonTextLight
 import com.softtimer.ui.theme.Blue
@@ -57,36 +59,21 @@ import com.softtimer.util.Constants.CLOCK_MIN_SIZE
 import com.softtimer.util.absPad
 import com.softtimer.util.arcShadow
 import com.softtimer.util.calculateShadowXOffset
-import kotlin.time.Duration
 
 private const val TAG = "Clock1"
 
 @Composable
 fun Clock(
     modifier: Modifier = Modifier,
-    isDarkTheme: Boolean,
-
-    timerState: TimerState,
-    duration: Duration,
-    hState: Int,
-    minState: Int,
-    sState: Int,
-    overtimeMins: Int,
-    overtimeSecs: Int,
-    overtimeMillis: String,
-
     clockSize: Float,
-    clockInitialStart: Boolean,
-    progressBarSweepAngle: Float,
-    showOvertime: Boolean,
-
+    timerService: TimerService,
+    viewModel: TimerViewModel,
+    isDarkTheme: Boolean,
     onClockSizeChanged: (Float) -> Unit,
-    onClockInitialStartChange: (Boolean) -> Unit,
-    onProgressBarSweepAngleChange: (Float) -> Unit,
-    onShowOvertimeChange: (Boolean) -> Unit,
-    onProgressBarSweepAngleTargetChange: (Float) -> Unit,
     onClockAnimationStateChanged: (Boolean) -> Unit,
 ) {
+    val timerState = timerService.timerState
+
     val clockSizeModifier by animateFloatAsState(
         targetValue = clockSize,
         animationSpec = tween(
@@ -99,63 +86,63 @@ fun Clock(
         when (timerState) {
             TimerState.Idle -> {
                 onClockSizeChanged(CLOCK_MIN_SIZE)
-                onClockInitialStartChange(true)
+                viewModel.clockInitialStart = true
                 animate(
-                    initialValue = progressBarSweepAngle,
+                    initialValue = viewModel.progressBarSweepAngle,
                     targetValue = 0f,
                     animationSpec = tween(
                         durationMillis = MID_ANIMATION_DURATION,
                         easing = LinearEasing
                     )
                 ) { value, _ ->
-                    onProgressBarSweepAngleChange(value)
+                    viewModel.progressBarSweepAngle = value
                 }
                 onClockAnimationStateChanged(false)
             }
 
             TimerState.Running -> {
-                if (clockInitialStart) {
+                if (viewModel.clockInitialStart) {
                     onClockSizeChanged(CLOCK_MAX_SIZE)
-                    onClockInitialStartChange(false)
-                    onShowOvertimeChange(false)
+                    viewModel.clockInitialStart = false
+                    viewModel.showOvertime = false
 
                     onClockAnimationStateChanged(true)
 
                     //progress bar animation that started when timer does
                     animate(
-                        initialValue = progressBarSweepAngle,
+                        initialValue = viewModel.progressBarSweepAngle,
                         targetValue = 360f,
                         animationSpec = tween(
                             durationMillis = MID_ANIMATION_DURATION,
                             easing = LinearEasing
                         )
                     ) { value, _ ->
-                        onProgressBarSweepAngleChange(value)
+                        viewModel.progressBarSweepAngle = value
                     }
 
                     onClockAnimationStateChanged(false)
                 }
                 //progress bar animation that running with timer
                 animate(
-                    initialValue = progressBarSweepAngle,
+                    initialValue = viewModel.progressBarSweepAngle,
                     targetValue = 0f,
                     animationSpec = tween(
-                        durationMillis = duration.inWholeMilliseconds.toInt(),
+                        durationMillis = timerService.duration.inWholeMilliseconds.toInt(),
                         easing = LinearEasing
                     )
                 ) { value, _ ->
-                    onProgressBarSweepAngleChange(value)
+                    viewModel.progressBarSweepAngle = value
                 }
             }
 
             TimerState.Paused -> {
-                onProgressBarSweepAngleTargetChange(progressBarSweepAngle)
+                viewModel.progressBarSweepAngleTarget = viewModel.progressBarSweepAngle
             }
 
             TimerState.Ringing -> {
-                onShowOvertimeChange(true)
-                onProgressBarSweepAngleTargetChange(0f)
-                onProgressBarSweepAngleTargetChange(360f)
+                viewModel.showOvertime = true
+                viewModel.progressBarSweepAngleTarget = 0f
+                viewModel.progressBarSweepAngleTarget = 360f
             }
 
             else -> {}
@@ -180,7 +167,7 @@ fun Clock(
 
         ProgressBar(
             isDarkTheme = isDarkTheme,
-            sweepAngle = progressBarSweepAngle,
+            sweepAngle = viewModel.progressBarSweepAngle,
             diameter = 210f * clockSizeModifier,//210
             sizeModifier = clockSizeModifier
         )
@@ -197,7 +184,7 @@ fun Clock(
         Indicator(
             modifier = Modifier.offset(y = (-76f * clockSizeModifier).dp),
             isDarkTheme = isDarkTheme,
-            sweepAngle = progressBarSweepAngle,
+            sweepAngle = viewModel.progressBarSweepAngle,
             sizeModifier = clockSizeModifier
         )
 
@@ -210,27 +197,27 @@ fun Clock(
             contentDescription = null
         )
 
-        if (showOvertime) {
+        if (viewModel.showOvertime) {
             TimerNumbers(
-                timerState = timerState,
+                timerState = timerService.timerState,
                 isDarkTheme = isDarkTheme,
-                hours = hState.absPad(),
-                minutes = minState.absPad(),
-                seconds = sState.absPad(),
-                showOvertime = showOvertime,
-                overtimeMins = overtimeMins.absPad(),
-                overtimeSecs = overtimeSecs.absPad(),
-                overtimeMillis = overtimeMillis,
+                hours = timerService.hState.absPad(),
+                minutes = timerService.minState.absPad(),
+                seconds = timerService.sState.absPad(),
+                showOvertime = viewModel.showOvertime,
+                overtimeMins = timerService.overtimeMins.absPad(),
+                overtimeSecs = timerService.overtimeSecs.absPad(),
+                overtimeMillis = timerService.getOvertimeMillis(),
                 sizeModifier = clockSizeModifier
             )
         } else {
             TimerNumbers(
-                timerState = timerState,
+                timerState = timerService.timerState,
                 isDarkTheme = isDarkTheme,
-                hours = hState.absPad(),
-                minutes = minState.absPad(),
-                seconds = sState.absPad(),
-                showOvertime = showOvertime,
+                hours = timerService.hState.absPad(),
+                minutes = timerService.minState.absPad(),
+                seconds = timerService.sState.absPad(),
+                showOvertime = viewModel.showOvertime,
                 sizeModifier = clockSizeModifier
             )
         }

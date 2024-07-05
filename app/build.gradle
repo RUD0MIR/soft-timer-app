@@ -1,9 +1,9 @@
 plugins {
-    alias libs.plugins.com.android.application
-    alias libs.plugins.org.jetbrains.kotlin.android
-    alias libs.plugins.com.google.devtools.ksp
-    alias libs.plugins.compose.compiler
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+    id 'kotlin-kapt'
     id 'dagger.hilt.android.plugin'
+    id 'com.google.devtools.ksp'
 }
 
 android {
@@ -60,7 +60,6 @@ dependencies {
     implementation libs.androidx.ui
     implementation libs.androidx.ui.graphics
     implementation libs.androidx.ui.tooling.preview
-    implementation libs.androidx.hilt.navigation.compose
     implementation libs.androidx.material3
     implementation libs.androidx.appcompat
     implementation libs.material
@@ -84,5 +83,4 @@ dependencies {
 
     // Preferences DataStore
     implementation libs.androidx.datastore.preferences
-
 }

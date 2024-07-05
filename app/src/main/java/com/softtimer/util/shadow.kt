@@ -1,21 +1,26 @@
 package com.softtimer.util
 
 import android.graphics.BlurMaskFilter
-import androidx.compose.foundation.layout.size
+import android.graphics.drawable.shapes.ArcShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Paint
+import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.drawscope.withTransform
+import androidx.compose.ui.graphics.rotate
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 fun Modifier.rectShadow(
     color: Color = Color.Black,
-    cornersRadius: Dp = 0.dp,
+    radius: Dp = 0.dp,
     blurRadius: Dp = 0.dp,
     offsetY: Dp = 0.dp,
     offsetX: Dp = 0.dp,
@@ -43,8 +48,8 @@ fun Modifier.rectShadow(
                 top = topPixel,
                 right = rightPixel,
                 bottom = bottomPixel,
-                radiusX = cornersRadius.toPx(),
-                radiusY = cornersRadius.toPx(),
+                radiusX = radius.toPx(),
+                radiusY = radius.toPx(),
                 paint
             )
         }

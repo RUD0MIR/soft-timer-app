@@ -24,6 +24,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.softtimer.service.ServiceHelper
 import com.softtimer.service.TimerState
 import com.softtimer.ui.theme.SoftTImerTheme
+import com.softtimer.util.Constants
 import com.softtimer.util.Constants.ACTION_SERVICE_RESET
 import com.softtimer.util.Constants.ACTION_SERVICE_START
 import com.softtimer.util.Constants.ACTION_SERVICE_STOP
@@ -95,8 +96,8 @@ fun TimerScreen(
             val bottomGuideLine = createGuidelineFromBottom(fraction = 0.12f)
             val topGuideLine = createGuidelineFromTop(fraction = 0.16f)
 
-            var clockSizeModifier by rememberSaveable {
-                mutableFloatStateOf(1f)
+            var clockSize by rememberSaveable {
+                mutableFloatStateOf(Constants.CLOCK_MIN_SIZE)
             }
             var clockInitialStart by rememberSaveable {
                 mutableStateOf(true)
@@ -114,6 +115,7 @@ fun TimerScreen(
                     start.linkTo(parent.start)
                     end.linkTo(parent.end)
                 },
+                isDarkTheme = isDarkThemeValue,
                 timerState = timerState,
                 duration = duration,
                 hState = hState,
@@ -123,11 +125,11 @@ fun TimerScreen(
                 overtimeSecs = overtimeSecs,
                 overtimeMillis = overtimeMillis,
                 onClockStartResetAnimationStateChanged = { clockStartResetAnimationRunning = it },
-                clockSizeModifier = clockSizeModifier,
+                clockSize = clockSize,
                 clockInitialStart = clockInitialStart,
                 progressBarSweepAngle = progressBarSweepAngle,
                 showOvertime = showOvertime,
-                onClockSizeModifierChange = { clockSizeModifier = it },
+                onClockSizeChange = { clockSize = it },
                 onClockInitialStartChange = { clockInitialStart = it },
                 onProgressBarSweepAngleChange = { progressBarSweepAngle = it },
                 onShowOvertimeChange = { showOvertime = it }

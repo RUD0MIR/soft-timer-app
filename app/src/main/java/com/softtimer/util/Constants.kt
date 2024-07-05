@@ -18,8 +18,4 @@ object Constants {
 
     const val CLOCK_MIN_SIZE = 1.1f
     const val CLOCK_MAX_SIZE = 1.4f
-
-    const val MID_ANIMATION_DELAY = 1000L
-    const val MID_ANIMATION_DURATION = MID_ANIMATION_DELAY.toInt() - 150
-    const val SHORT_ANIMATION_DURATION = 500
 }

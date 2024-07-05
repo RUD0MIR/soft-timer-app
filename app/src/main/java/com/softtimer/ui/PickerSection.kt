@@ -1,13 +1,14 @@
 package com.softtimer.ui
 
 import android.os.Build
+import android.util.Log
 import android.widget.NumberPicker
-import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -21,11 +22,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -46,10 +45,10 @@ import com.softtimer.ui.theme.FaintLight1Light
 import com.softtimer.ui.theme.FaintLightDark
 import com.softtimer.ui.theme.FaintShadow
 import com.softtimer.ui.theme.FaintShadowLight
+import com.softtimer.ui.theme.MID_ANIMATION_DELAY
+import com.softtimer.ui.theme.MID_ANIMATION_DURATION
 import com.softtimer.ui.theme.Orbitron
 import com.softtimer.ui.theme.SoftTImerTheme
-import com.softtimer.util.Constants.MID_ANIMATION_DELAY
-import com.softtimer.util.Constants.MID_ANIMATION_DURATION
 import com.softtimer.util.getNumbersWithPad
 import kotlinx.coroutines.delay
 
@@ -63,40 +62,47 @@ fun PickerSection(
     hValue: Int,
     minValue: Int,
     sValue: Int,
+    pickerVisibilityValue: Float,
+    onPickerVisibilityValueChanged: (Float) -> Unit,
+    isVisible: Boolean,
+    onVisibilityChanged: (Boolean) -> Unit,
     onHPickerStateChanged: (Int) -> Unit,
     onMinPickerStateChanged: (Int) -> Unit,
     onSecPickerStateChanged: (Int) -> Unit,
 ) {
-    var isPickerVisible by rememberSaveable {
-        mutableStateOf(true)
-    }
+
+
+    val pickerVisibility by animateFloatAsState(
+        targetValue = pickerVisibilityValue,
+        animationSpec = tween(
+            durationMillis = MID_ANIMATION_DURATION,
+            easing = LinearEasing
+        )
+    )
+
     LaunchedEffect(key1 = timerState) {
         when (timerState) {
             TimerState.Running -> {
-                isPickerVisible = false
+                onPickerVisibilityValueChanged(0f)
                 delay(MID_ANIMATION_DELAY)
+                onVisibilityChanged(false)
             }
 
             TimerState.Idle -> {
-                isPickerVisible = true
+                onVisibilityChanged(true)
+                onPickerVisibilityValueChanged(1f)
             }
 
             else -> {}
         }
     }
 
-
-
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier = modifier
-            .fillMaxWidth()
-            .height(139.dp)
-    ) {
-        AnimatedVisibility(
-            isPickerVisible,
-            enter = fadeIn(animationSpec = tween(MID_ANIMATION_DURATION)),
-            exit = fadeOut(animationSpec = tween(MID_ANIMATION_DURATION))
+    if (isVisible) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = modifier
+                .fillMaxWidth()
+                .height(139.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -105,7 +111,8 @@ fun PickerSection(
             ) {
                 StyledNumberPicker(
                     modifier = Modifier
-                        .offset(x = 14.dp),
+                        .offset(x = 14.dp)
+                        .alpha(pickerVisibility),
                     isDarkTheme = isDarkTheme,
                     range = getNumbersWithPad(1..24),
                     showDivider = true,
@@ -116,6 +123,7 @@ fun PickerSection(
                 }
 
                 StyledNumberPicker(
+                    modifier = Modifier.alpha(pickerVisibility),
                     isDarkTheme = isDarkTheme,
                     range = getNumbersWithPad(1..59),
                     name = "min",
@@ -128,7 +136,8 @@ fun PickerSection(
 
                 StyledNumberPicker(
                     modifier = Modifier
-                        .offset(x = (-14).dp),
+                        .offset(x = (-14).dp)
+                        .alpha(pickerVisibility),
                     isDarkTheme = isDarkTheme,
                     range = getNumbersWithPad(1..59),
                     pickerValue = sValue,
@@ -160,7 +169,7 @@ fun StyledNumberPicker(
             modifier = Modifier
                 .fillMaxWidth()
                 .fillMaxHeight(0.8f),
-            painter = painterResource(id = if (isDarkTheme) R.drawable.dark_picker_shadow else R.drawable.picker_shadow),
+            painter = painterResource(id = if(isDarkTheme) R.drawable.dark_picker_shadow else R.drawable.picker_shadow),
             contentDescription = null,
             contentScale = ContentScale.FillBounds
         )
@@ -172,7 +181,7 @@ fun StyledNumberPicker(
                     .align(Alignment.CenterEnd)
                     .padding(bottom = 29.dp, end = 4.dp),
                 text = ":",
-                color = if (isDarkTheme) ButtonTextDark else ButtonTextLight,
+                color = if(isDarkTheme) ButtonTextDark else ButtonTextLight,
                 fontFamily = Orbitron,
                 fontSize = 18.sp,
                 fontWeight = FontWeight.SemiBold,
@@ -198,15 +207,14 @@ fun StyledNumberPicker(
                         clipToPadding = true
 
                         setOnValueChangedListener { numberPicker, i, i2 ->
-                            onValueChanged(numberPicker.value)
+                                onValueChanged(numberPicker.value)
                         }
                     }
                 },
                 update = {
-                    it.value = pickerValue
+                        it.value = pickerValue
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                        it.textColor =
-                            if (isDarkTheme) ButtonTextDark.hashCode() else ButtonTextLight.hashCode()
+                        it.textColor = if(isDarkTheme) ButtonTextDark.hashCode() else ButtonTextLight.hashCode()
                     }
                 }
             )
@@ -222,7 +230,7 @@ fun StyledNumberPicker(
                     brush = Brush.verticalGradient(
                         colors = listOf(
                             Color.Transparent,
-                            if (isDarkTheme) FaintShadow else FaintShadowLight,
+                            if(isDarkTheme) FaintShadow else FaintShadowLight,
                             Color.Transparent
                         )
                     )
@@ -240,8 +248,8 @@ fun StyledNumberPicker(
                     brush = Brush.verticalGradient(
                         colors = listOf(
                             Color.Transparent,
-                            if (isDarkTheme) FaintLight1Dark else FaintLight1Light,
-                            if (isDarkTheme) FaintLightDark else FaintLight,
+                            if(isDarkTheme) FaintLight1Dark else FaintLight1Light,
+                            if(isDarkTheme) FaintLightDark else FaintLight,
                             Color.Transparent
                         ),
                     )
@@ -254,7 +262,7 @@ fun StyledNumberPicker(
             text = name,
             fontFamily = Orbitron,
             fontSize = 16.sp,
-            color = if (isDarkTheme) ButtonTextDark else ButtonTextLight,
+            color = if(isDarkTheme) ButtonTextDark else ButtonTextLight,
             fontWeight = FontWeight.SemiBold
         )
     }

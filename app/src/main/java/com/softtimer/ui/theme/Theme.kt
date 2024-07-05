@@ -11,24 +11,20 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
+const val MID_ANIMATION_DELAY = 1000L
+const val MID_ANIMATION_DURATION = MID_ANIMATION_DELAY.toInt() - 150
+const val SHORT_ANIMATION_DURATION = 500
+
 private val DarkColorScheme = darkColorScheme(
-    primary = primaryDark,
-    surface = surfaceDark,
-    onSurface = onSurfaceDark,
-    surfaceContainer = surfaceContainerDark
+
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = primaryLight,
-    surface = surfaceLight,
-    onSurface = onSurfaceLight,
-    surfaceContainer = surfaceContainerLight,
 )
 
 @Composable

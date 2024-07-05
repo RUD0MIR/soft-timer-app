@@ -12,12 +12,16 @@ import android.media.RingtoneManager
 import android.os.Binder
 import android.os.Build
 import android.os.PowerManager
+import android.os.VibrationEffect
+import android.os.Vibrator
 import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.app.NotificationCompat
+import androidx.lifecycle.LifecycleCoroutineScope
+import com.softtimer.ExpiredActivity
 import com.softtimer.MainActivity
 import com.softtimer.util.Constants.ACTION_SERVICE_RESET
 import com.softtimer.util.Constants.ACTION_SERVICE_START
@@ -33,7 +37,9 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import java.util.Timer
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import java.util.*
 import javax.inject.Inject
 import kotlin.concurrent.fixedRateTimer
 import kotlin.coroutines.CoroutineContext
@@ -240,6 +246,11 @@ class TimerService : Service() {
         Log.d(TAG, keyguardManager.isKeyguardLocked.toString())
 
         if (isScreenOffWhenTimeExpired && keyguardManager.isKeyguardLocked) {
+            Intent(applicationContext, ExpiredActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                startActivity(this)
+            }
+        } else if (isScreenOffWhenTimeExpired && !keyguardManager.isKeyguardLocked) {
             Intent(applicationContext, MainActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK
                 startActivity(this)
@@ -325,13 +336,6 @@ class TimerService : Service() {
             )
         )
         notificationManager.notify(NOTIFICATION_ID, notificationBuilder.build())
-    }
-
-    fun resetState() {
-        hState = 0
-        minState = 0
-        sState = 0
-        showOvertime = false
     }
 
     inner class StopwatchBinder : Binder() {
